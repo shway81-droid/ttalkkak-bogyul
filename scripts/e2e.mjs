@@ -102,6 +102,108 @@ export async function runSet(page, { grade, flow, teams }, base) {
   return { errors, given };
 }
 
+/** 화면이 넘치는지: 문서 스크롤과 활동 자리(.stage, 넘치면 잘림) 안쪽을 함께 본다. 넘치면 까닭, 아니면 '' */
+async function overflowOf(page) {
+  return page.evaluate(() => {
+    const se = document.scrollingElement;
+    const stage = document.querySelector('.stage');
+    const bad = [];
+    if (se.scrollHeight > innerHeight + 1) bad.push(`문서 ${se.scrollHeight}>${innerHeight}`);
+    if (se.scrollWidth > innerWidth + 1) bad.push(`문서 가로 ${se.scrollWidth}>${innerWidth}`);
+    if (stage && stage.scrollHeight > stage.clientHeight + 1) bad.push(`활동 ${stage.scrollHeight}>${stage.clientHeight}`);
+    if (stage && stage.scrollWidth > stage.clientWidth + 1) bad.push(`활동 가로 ${stage.scrollWidth}>${stage.clientWidth}`);
+    return bad.join(', ');
+  });
+}
+
+/** 활동 안에서 화면이 가장 붐비는 곳까지 들어가 본다. look(이름)이 그 자리를 잰다. */
+const SWEEP = {
+  greet: async (page, look) => {
+    for (let k = 2; k <= 4; k++) {
+      await click(page, 'greet-next');
+      await page.waitForTimeout(GUARD_WAIT);
+      await look(`패널 ${k}`);
+    }
+  },
+  word: async (page, look) => {
+    if (await page.locator(act('hint')).isEnabled()) {
+      await click(page, 'hint');
+      await look('힌트');
+    }
+    await click(page, 'reveal');
+    await page.waitForTimeout(GUARD_WAIT);
+    await look('정답');
+  },
+  gesture: async (page, look) => {
+    await click(page, 'show-word');
+    await page.waitForTimeout(GUARD_WAIT);
+    await look('낱말');
+  },
+  quizboard: async (page, look) => {
+    await click(page, 'reveal');
+    await page.waitForTimeout(GUARD_WAIT);
+    await look('정답과 모둠 버튼');
+  },
+  story: async (page, look) => {
+    for (let s = 1; s <= 5; s++) {
+      for (const name of ['hint', 'ideas']) if (await page.locator(act(name)).count()) await click(page, name);
+      await look(`단계 ${s} 힌트·예시`);
+      if (s < 5) {
+        await click(page, 'stage-next');
+        await page.waitForTimeout(GUARD_WAIT);
+      }
+    }
+  },
+  draw: async (page, look) => {
+    await click(page, 'draw-start');
+    await page.waitForTimeout(GUARD_WAIT);
+    await look('단계');
+    const total = Number(await page.locator('[data-draw-step]').getAttribute('data-total-steps'));
+    for (let k = 1; k <= total; k++) {
+      await click(page, 'draw-next');
+      await page.waitForTimeout(GUARD_WAIT);
+    }
+    await look('색칠');
+    const coloring = Number(await page.locator('[data-coloring]').getAttribute('data-coloring'));
+    await page.clock.fastForward(coloring * 1000 + 1000);
+    await page.locator('[data-decorate]').waitFor();
+    await look('꾸미기');
+  },
+};
+
+/** 세트의 모든 순서를 돌며 규칙 화면·활동 화면·활동 안의 붐비는 화면이 넘치는지 본다(page.clock.install 뒤에 부른다) */
+export async function sweepScreens(page, base, { grade, flow, teams }) {
+  const over = [];
+  await page.goto(base);
+  await click(page, `grade-${grade}`);
+  await click(page, `flow-${flow}`);
+  await click(page, `teams-${teams}`);
+  await click(page, 'start');
+  // 별판: 모둠마다 별을 12개씩(두 자리 수) 준 뒤 칩이 한 줄이고 칩 안 글자가 잘리지 않는지
+  for (let t = 0; t < teams; t++) for (let k = 0; k < 12; k++) await click(page, `star-add-${t}`);
+  const chipRows = new Set(await page.locator('.team').evaluateAll((els) => els.map((e) => e.offsetTop))).size;
+  const chipsClipped = await page.locator('.team-add').evaluateAll((els) => els.filter((e) => e.scrollWidth > e.clientWidth + 1).length);
+  const count = await page.locator('[data-act^="goto-"]').count();
+  for (let i = 0; i < count; i++) {
+    const kind = await page.locator(act(`goto-${i}`)).getAttribute('data-step-kind');
+    const look = async (name) => {
+      const bad = await overflowOf(page);
+      if (bad) over.push(`g${grade}-${flow} ${i + 1}.${kind} ${name} (${bad})`);
+    };
+    await page.locator(act('start-step')).waitFor();
+    await look('규칙');
+    await click(page, 'start-step');
+    await page.waitForTimeout(GUARD_WAIT);
+    await look('처음');
+    if (SWEEP[kind]) await SWEEP[kind](page, look);
+    if (i < count - 1) {
+      await page.waitForTimeout(GUARD_WAIT);
+      await click(page, 'next-step');
+    }
+  }
+  return { over, chipRows, chipsClipped };
+}
+
 // ---------------------------------------------------------------------------
 
 const results = [];
@@ -128,13 +230,42 @@ async function main() {
       await page.close();
     }
 
-    // 두 세트를 끝까지
-    for (const [grade, flow] of [[3, 'lively'], [4, 'calm']]) {
+    // 12세트 모두 끝까지(모둠 6개): 콘솔 오류 0, 축하 화면 합계 = 진행 중 준 별 수
+    for (const s of SETS) {
       const page = await ctx.newPage();
-      const { errors } = await runSet(page, { grade, flow, teams: 6 }, base);
-      check(`g${grade}-${flow} 끝까지 진행, 콘솔 오류 0`, errors.length === 0, errors.join(' | '));
-      check(`g${grade}-${flow} 축하 화면`, (await page.locator('body').innerText()).includes('오늘 우리 반 별'));
+      const { errors, given } = await runSet(page, { grade: s.grade, flow: s.flow, teams: 6 }, base);
+      check(`${s.id} 끝까지 진행, 콘솔 오류 0`, errors.length === 0, errors.join(' | '));
+      const shown = Number(await page.locator('[data-celebrate-total]').getAttribute('data-celebrate-total'));
+      check(`${s.id} 축하 화면 합계 = 준 별 ${given}`, given > 0 && shown === given && (await totalStars(page)) === given, `축하 ${shown}, 별판 ${await totalStars(page)}`);
       await page.close();
+    }
+
+    // 규칙 안내 본문 글자: 1920×1080 에서 32px 이상(교실 뒷자리)
+    {
+      const page = await ctx.newPage();
+      await page.goto(base);
+      await click(page, 'grade-6');
+      await click(page, 'start');
+      const px = await page.locator('.rules-lines li').first().evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
+      check('규칙 안내 본문 글자 32px 이상(1920×1080)', px >= 32, `${px}px`);
+      await page.close();
+    }
+
+    // 작은 화면(1366×768, 1280×720)에서 g6-lively 모둠 8개: 모든 화면이 넘치지 않고 별판이 한 줄
+    for (const [width, height] of [[1366, 768], [1280, 720]]) {
+      const sctx = await browser.newContext({ viewport: { width, height } });
+      try {
+        const page = await sctx.newPage();
+        await page.clock.install();
+        // g6-lively(상식 퀴즈) + g6-calm(몸으로 말해요): 두 세트면 활동 7가지가 모두 지나간다
+        for (const flow of ['lively', 'calm']) {
+          const { over, chipRows, chipsClipped } = await sweepScreens(page, base, { grade: 6, flow, teams: 8 });
+          check(`${width}×${height} g6-${flow}: 모든 화면이 화면 안에 들어감`, over.length === 0, over.join(' | '));
+          check(`${width}×${height} g6-${flow}: 모둠 8개 별판이 한 줄, 칩 글자(★12) 안 잘림`, chipRows === 1 && chipsClipped === 0, `${chipRows}줄, 잘린 칩 ${chipsClipped}개`);
+        }
+      } finally {
+        await sctx.close();
+      }
     }
 
     // 순서 알약·일시정지

@@ -1,0 +1,22 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      # 단위 검사 + 자료 검증 + 글꼴 글자 검사
+      - run: npm test
+      - run: npx playwright install --with-deps chromium
+      # 브라우저 검사(12세트 끝까지, 작은 화면, 진행 대본 A4 한 장, 오프라인)
+      - run: npm run e2e
