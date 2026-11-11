@@ -2,8 +2,8 @@
 import { h, fill } from './dom.js';
 import { FLOWS } from '../core/flows.js';
 
-const SLOT_COLOR = { greet: 'n', word: 'h', team: 'h', story: 'm', draw: 'c', celebrate: 'n' };
-const SLOT_NAME = { greet: '인사', word: '말놀이', team: '모둠 놀이', story: '이야기', draw: '그리기', celebrate: '축하' };
+const SLOT_COLOR = { greet: 'n', word: 'h', team: 'h', person: 'h', story: 'm', celebrate: 'n' };
+const SLOT_NAME = { greet: '인사', word: '말놀이', team: '모둠 놀이', person: '인물 퀴즈', story: '이야기', celebrate: '축하' };
 const TEAM_CHOICES = [4, 5, 6, 7, 8];
 
 export function renderStart(root, { sets, onStart, onPrint }) {
@@ -72,7 +72,7 @@ export function renderStart(root, { sets, onStart, onPrint }) {
         h('div', { class: 'chips' }, teamBtns),
       ),
       h('div', { class: 'start-bottom' }, h('div', { class: 'print-box' }, printBtn, printHint), startBtn),
-      h('footer', { class: 'credit' }, '문항·이야기·그림: 짬짬이'),
+      h('footer', { class: 'credit' }, '문항·이야기·인물: 짬짬이 · ', h('a', { href: 'credits.html', 'data-act': 'credits' }, '인물 사진 출처')),
     ),
   );
   sync();

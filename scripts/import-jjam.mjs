@@ -1,11 +1,11 @@
-// 짬짬이 저장소에서 낱말·이야기·그림·퀴즈 자료를 가져와 data/ 에 저장한다.
+// 짬짬이 저장소에서 낱말·이야기·인물·퀴즈 자료를 가져와 data/ 에 저장하고, 인물 사진을 assets/people/ 에 복사한다.
 // 사용자의 로컬 jjam-classroom 폴더는 건드리지 않고, .cache/jjam-classroom 복제본만 읽는다.
+// --no-pull: 이미 받은 복제본을 그대로 쓴다(원본을 새로 받지 않음).
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync, rmSync, copyFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { runInNewContext } from 'node:vm';
-import { drawingTiming } from '../js/core/drawing.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const REPO = 'https://github.com/shway81-droid/jjam-classroom.git';
@@ -67,6 +67,8 @@ export function filterWords(items) {
 /** 인물 퀴즈에 쓰는 주제: 이 주제는 모든 난이도, 나머지 인물은 쉬움(easy)만 (2026-11-11 사용자 결정) */
 export const PERSON_TOPICS_ALL_LEVELS = ['가수', '배우', '예능인'];
 
+export const PHOTO_FILE_RE = /^assets\/people\/[\w-]+\.webp$/;
+
 /** 인물 퀴즈 후보: 가수·배우·예능인은 모두, 역사 인물·과학자·예술가·운동선수는 쉬움만 */
 export function filterPeople(items) {
   return items.filter((w) => w.type === 'person' && (PERSON_TOPICS_ALL_LEVELS.includes(w.topic) || w.level === 'easy'));
@@ -76,11 +78,11 @@ function git(...args) {
   return execFileSync('git', args, { encoding: 'utf8' }).trim();
 }
 
-function syncCache() {
+function syncCache(pull = true) {
   if (!existsSync(CACHE)) {
     mkdirSync(dirname(CACHE), { recursive: true });
     git('clone', '--depth', '1', REPO, CACHE);
-  } else {
+  } else if (pull) {
     git('-C', CACHE, 'pull', '--ff-only');
   }
   return git('-C', CACHE, 'rev-parse', 'HEAD');
@@ -98,18 +100,27 @@ function countBy(items, keyFn) {
 }
 
 function main() {
-  const commit = syncCache();
+  const commit = syncCache(!process.argv.includes('--no-pull'));
   const source = { repo: REPO.replace(/\.git$/, ''), commit };
   mkdirSync(join(ROOT, 'data'), { recursive: true });
 
-  const words = filterWords(readJson('word/data/words.json').items);
+  const wordItems = readJson('word/data/words.json').items;
+  const words = filterWords(wordItems);
   writeJson('words.json', { source, items: words });
+
+  // 인물 퀴즈: 사진은 원본과 같은 경로(assets/people/…)로 복사한다. 빠진 인물의 옛 사진이 남지 않게 폴더를 새로 만든다.
+  const people = filterPeople(wordItems);
+  const photoDir = join(ROOT, 'assets', 'people');
+  rmSync(photoDir, { recursive: true, force: true });
+  mkdirSync(photoDir, { recursive: true });
+  for (const p of people) {
+    if (!PHOTO_FILE_RE.test(p.photo?.file || '')) throw new Error(`${p.id}: 사진 경로가 이상합니다 (${p.photo?.file})`);
+    copyFileSync(join(CACHE, 'word', p.photo.file), join(ROOT, p.photo.file));
+  }
+  writeJson('people.json', { source, people });
 
   const stories = readJson('story/data/stories.json').stories.filter((s) => s.sensitivity === 'low');
   writeJson('stories.json', { source, stories });
-
-  const drawings = readJson('draw/data/drawings.json').drawings.map((d) => ({ ...d, ...drawingTiming(d) }));
-  writeJson('drawings.json', { source, drawings });
 
   const quiz = [];
   const gamesDir = join(CACHE, 'quiz', 'games');
@@ -128,7 +139,7 @@ function main() {
   console.log(`원본 커밋 ${commit.slice(0, 7)}`);
   console.log('낱말 유형·난이도:', JSON.stringify(countBy(words, (w) => `${w.type}/${w.level}`)));
   console.log('이야기 학년대:', JSON.stringify(countBy(stories, (s) => s.grades || s.grade || '?')));
-  console.log('그림 난이도:', JSON.stringify(countBy(drawings, (d) => d.difficulty)));
+  console.log('인물 주제/난이도:', JSON.stringify(countBy(people, (p) => `${p.topic}/${p.level}`)));
   console.log('퀴즈 학년대:', JSON.stringify(countBy(quiz, (q) => q.bands)));
 }
 

@@ -56,13 +56,18 @@ test('이야기 섹션: 본문은 원본 그대로, 질문은 중심 질문 + �
   assert.deepEqual(sec.story.questions, [story.mainQuestion, ...story.followUpQuestions]);
 });
 
-test('그리기 섹션: 단계마다 누적 경로, 마지막 단계는 모든 d', () => {
-  const plan = planOf('g3-lively');
-  const { drawing, decorate } = plan.steps.find((s) => s.kind === 'draw').content;
-  const sec = buildScript(plan).sections.find((s) => s.title === '그리기');
-  assert.equal(sec.drawing.steps.length, drawing.steps.length);
-  assert.deepEqual(sec.drawing.steps.at(-1), drawing.steps.flatMap((st) => st.d));
-  assert.deepEqual(sec.drawing.steps[0], drawing.steps[0].d);
-  assert.equal(sec.drawing.viewBox, drawing.viewBox);
-  assert.equal(sec.drawing.decorate, decorate);
+test('인물 퀴즈 섹션: 힌트와 이름 10개, 겹치지 않음', () => {
+  for (const id of ['g1-lively', 'g6-calm']) {
+    const sec = buildScript(planOf(id)).sections.find((s) => s.title === '인물 퀴즈');
+    assert.equal(sec.items.length, 10, id);
+    assert.equal(new Set(sec.items.map((it) => it.a)).size, 10, id);
+    for (const it of sec.items) {
+      assert.ok(it.q.includes('·'), it.q); // 초성 · 한 줄 설명
+      assert.ok(it.a.length > 0);
+    }
+  }
+  const people = new Map(data.people.map((p) => [p.answer, p]));
+  for (const it of buildScript(planOf('g3-calm')).sections.find((s) => s.title === '인물 퀴즈').items) {
+    assert.equal(it.q, people.get(it.a).hint);
+  }
 });

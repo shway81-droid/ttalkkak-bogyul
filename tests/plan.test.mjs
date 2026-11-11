@@ -1,15 +1,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { FLOWS, bandOf } from '../js/core/flows.js';
+import { FLOWS, bandOf, BAND_PERSON_LEVELS } from '../js/core/flows.js';
 import { WORD_TYPES } from '../js/core/wordTypes.js';
 import { buildPlan, poolFor } from '../js/core/plan.js';
-import { fitsSlot } from '../js/core/drawing.js';
 import { makeRng } from '../js/core/rng.js';
 import { readDataDir } from '../scripts/validate-data.mjs';
 
 const data = readDataDir();
 const setById = (id) => data.sets.find((s) => s.id === id);
-const BAND_LEVEL = { lower: 'easy', middle: 'normal', upper: 'hard' };
 
 test('두 흐름 모두 합이 40분', () => {
   for (const f of ['lively', 'calm']) {
@@ -35,9 +33,9 @@ test('WORD_TYPES: 9개 유형에 제목과 안내가 있다', () => {
 
 test('g3-lively 계획: 순서·분·제목', () => {
   const plan = buildPlan(setById('g3-lively'), data, makeRng(1));
-  assert.deepEqual(plan.steps.map((s) => s.kind), ['greet', 'word', 'gesture', 'story', 'draw', 'celebrate']);
-  assert.deepEqual(plan.steps.map((s) => s.minutes), [3, 10, 10, 7, 8, 2]);
-  assert.deepEqual(plan.steps.map((s) => s.title), ['인사', '말놀이', '몸으로 말해요', '이야기', '그리기', '축하']);
+  assert.deepEqual(plan.steps.map((s) => s.kind), ['greet', 'word', 'gesture', 'person', 'story', 'celebrate']);
+  assert.deepEqual(plan.steps.map((s) => s.minutes), [3, 10, 10, 8, 7, 2]);
+  assert.deepEqual(plan.steps.map((s) => s.title), ['인사', '말놀이', '몸으로 말해요', '인물 퀴즈', '이야기', '축하']);
   assert.equal(plan.title, '3학년 · 신나게 열기');
   assert.equal(plan.setId, 'g3-lively');
   assert.equal(plan.grade, 3);
@@ -47,8 +45,9 @@ test('g3-lively 계획: 순서·분·제목', () => {
 
 test('g3-calm 계획의 순서', () => {
   const plan = buildPlan(setById('g3-calm'), data, makeRng(1));
-  assert.deepEqual(plan.steps.map((s) => s.kind), ['greet', 'draw', 'story', 'word', 'quizboard', 'celebrate']);
-  assert.equal(plan.steps[4].title, '상식 퀴즈');
+  assert.deepEqual(plan.steps.map((s) => s.kind), ['greet', 'story', 'word', 'quizboard', 'person', 'celebrate']);
+  assert.deepEqual(plan.steps.map((s) => s.minutes), [3, 7, 10, 10, 8, 2]);
+  assert.equal(plan.steps[3].title, '상식 퀴즈');
 });
 
 test('word 덱 30장은 세트의 유형·난이도 안에서 겹치지 않는다', () => {
@@ -84,17 +83,30 @@ test('quizboard 덱 문항은 모두 세트 학년대 것', () => {
   }
 });
 
-test('story 는 학년대, draw 는 학년대 난이도이고 시간에 맞으며 꾸미기 문구가 채워진다', () => {
+test('story 는 학년대 것', () => {
   for (const set of data.sets) {
-    const band = bandOf(set.grade);
-    const plan = buildPlan(set, data, makeRng(11));
-    const story = plan.steps.find((s) => s.kind === 'story').content.story;
-    assert.ok(story.grades.includes(band), set.id);
-    const { drawing, decorate } = plan.steps.find((s) => s.kind === 'draw').content;
-    assert.equal(drawing.difficulty, BAND_LEVEL[band], set.id);
-    assert.ok(fitsSlot(drawing), set.id);
-    assert.ok(decorate.length > 0 && !decorate.includes('{title}'), decorate);
-    assert.ok(decorate.includes(drawing.title), decorate);
+    const story = buildPlan(set, data, makeRng(11)).steps.find((s) => s.kind === 'story').content.story;
+    assert.ok(story.grades.includes(bandOf(set.grade)), set.id);
+  }
+});
+
+test('인물 난이도: 1·2학년 쉬움, 3·4학년 쉬움·보통, 5·6학년 모두', () => {
+  assert.deepEqual(BAND_PERSON_LEVELS, { lower: ['easy'], middle: ['easy', 'normal'], upper: ['easy', 'normal', 'hard'] });
+});
+
+test('person 덱은 사진이 있는 인물이고 학년대 난이도 안에서 겹치지 않는다', () => {
+  for (const set of data.sets) {
+    const levels = BAND_PERSON_LEVELS[bandOf(set.grade)];
+    const deck = buildPlan(set, data, makeRng(11)).steps.find((s) => s.kind === 'person').content.deck;
+    const seen = new Set();
+    for (let i = 0; i < 20; i++) {
+      const p = deck.next();
+      assert.equal(p.type, 'person', set.id);
+      assert.ok(levels.includes(p.level), `${set.id} ${p.id} ${p.level}`);
+      assert.ok(p.photo && p.photo.file, p.id);
+      assert.ok(!seen.has(p.id), '중복 ' + p.id);
+      seen.add(p.id);
+    }
   }
 });
 
@@ -103,7 +115,8 @@ test('poolFor: 슬롯마다 후보를 준다', () => {
   assert.ok(poolFor('word', set, data).length >= 30);
   assert.ok(poolFor('team', set, data).every((w) => w.type === 'gesture'));
   assert.ok(poolFor('story', set, data).length >= 3);
-  assert.ok(poolFor('draw', set, data).length >= 3);
+  assert.ok(poolFor('person', set, data).length >= 20);
+  assert.ok(poolFor('person', set, data).every((p) => p.level === 'easy'));
 });
 
 test('같은 씨앗이면 같은 계획', () => {
@@ -112,9 +125,7 @@ test('같은 씨앗이면 같은 계획', () => {
   const b = buildPlan(set, data, makeRng(77));
   const pick = (p, k) => p.steps.find((s) => s.kind === k).content;
   assert.equal(pick(a, 'story').story.id, pick(b, 'story').story.id);
-  assert.equal(pick(a, 'draw').drawing.id, pick(b, 'draw').drawing.id);
-  assert.equal(pick(a, 'draw').decorate, pick(b, 'draw').decorate);
-  for (const k of ['word', 'gesture']) {
+  for (const k of ['word', 'gesture', 'person']) {
     const da = pick(a, k).deck;
     const db = pick(b, k).deck;
     for (let i = 0; i < 5; i++) assert.equal(da.next().id, db.next().id, k);

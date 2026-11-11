@@ -4,9 +4,9 @@ import { WORD_TYPES } from './wordTypes.js';
 export const TALLY = '칠판에 모둠별로 바를 정 자를 한 획씩 그어 별을 셉니다';
 
 const MARKS = ['①', '②', '③', '④'];
-const COUNTS = { word: 10, gesture: 15, quizboard: 10 };
+const COUNTS = { word: 10, gesture: 15, quizboard: 10, person: 10 };
 
-const draw = (deck, n) => Array.from({ length: Math.min(n, deck.size) }, () => deck.next());
+const take = (deck, n) => Array.from({ length: Math.min(n, deck.size) }, () => deck.next());
 
 // 정답 자리를 문항 id 로 정해, 같은 문항은 늘 같은 순서로 나오게 한다.
 function answerSlot(id) {
@@ -51,7 +51,7 @@ function section(step) {
           '모둠 차례대로 문제를 읽어 주거나 칠판에 씁니다. 10초 의논한 뒤 차례 모둠이 답합니다.',
           '맞히면 그 모둠에 ★, 틀리면 다음 모둠에게 기회를 넘깁니다. 다른 모둠은 먼저 외치지 않습니다.',
         ],
-        items: draw(content.deck, COUNTS.word).map(wordLine),
+        items: take(content.deck, COUNTS.word).map(wordLine),
       };
     case 'gesture':
       return {
@@ -60,7 +60,7 @@ function section(step) {
           '차례 모둠 대표 한 명이 칠판을 보지 않고 앞에 섭니다. 선생님이 모둠 친구들에게만 제시어를 보여 줍니다.',
           '친구들은 말없이 몸으로 설명하고, 1분 안에 맞히면 ★. 다음 모둠으로 넘어갑니다.',
         ],
-        words: draw(content.deck, COUNTS.gesture).map((w) => w.word),
+        words: take(content.deck, COUNTS.gesture).map((w) => w.word),
       };
     case 'quizboard':
       return {
@@ -69,7 +69,7 @@ function section(step) {
           '문제와 보기를 읽어 줍니다. 모든 모둠이 15초 의논합니다.',
           '"하나, 둘, 셋!" 신호에 모둠마다 손가락으로 보기 번호를 듭니다. 맞힌 모둠마다 ★.',
         ],
-        items: draw(content.deck, COUNTS.quizboard).map(quizLine),
+        items: take(content.deck, COUNTS.quizboard).map(quizLine),
       };
     case 'story': {
       const s = content.story;
@@ -82,24 +82,15 @@ function section(step) {
         story: { title: s.title, text: s.story.slice(), questions: [s.mainQuestion, ...(s.followUpQuestions || [])] },
       };
     }
-    case 'draw': {
-      const d = content.drawing;
-      const steps = [];
-      let acc = [];
-      for (const st of d.steps) {
-        acc = acc.concat(st.d);
-        steps.push(acc.slice());
-      }
+    case 'person':
       return {
         ...base,
         how: [
-          `${d.setupSay || '종이와 연필을 준비합니다.'}`,
-          '아래 그림을 한 단계씩 칠판에 따라 그려 보여 줍니다. 다 그리면 색칠하고 꾸미기를 합니다.',
-          '끝까지 함께 그리면 모든 모둠에 ★.',
+          '모둠 차례대로 힌트를 읽어 줍니다(초성은 칠판에 써도 좋습니다). 10초 의논한 뒤 차례 모둠이 누구인지 답합니다.',
+          '맞히면 그 모둠에 ★, 틀리면 다음 모둠에게 기회를 넘깁니다. 다른 모둠은 먼저 외치지 않습니다.',
         ],
-        drawing: { title: d.title, steps, viewBox: d.viewBox, decorate: content.decorate },
+        items: take(content.deck, COUNTS.person).map((p) => ({ q: p.hint, a: p.answer })),
       };
-    }
     case 'celebrate':
       return {
         ...base,

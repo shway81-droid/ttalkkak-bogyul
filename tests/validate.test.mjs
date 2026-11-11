@@ -37,16 +37,25 @@ test('같은 학년 두 세트의 말놀이 유형이 겹치면 오류', () => {
   assert.ok(errs.some((e) => e.includes('4학년') && e.includes('proverb')), errs.join('\n'));
 });
 
-test('꾸미기 문구에 {title} 바로 뒤 조사가 있으면 오류', () => {
+test('인물 후보가 20명 미만이면 그 세트 id 가 든 오류', () => {
   const data = fresh();
-  data.decorate.animal[0] = '{title}이 사는 곳을 그려요';
+  data.people = data.people.filter((p) => p.level !== 'easy').concat(data.people.filter((p) => p.level === 'easy').slice(0, 5));
   const errs = validateData(data);
-  assert.ok(errs.some((e) => e.includes('animal') && e.includes('조사')), errs.join('\n'));
+  assert.ok(errs.some((e) => e.includes('g1-lively') && e.includes('인물 퀴즈')), errs.join('\n'));
 });
 
-test('꾸미기 문구가 3개가 아닌 주제는 오류', () => {
+test('인물 사진 파일이 없으면 그 인물 id 가 든 오류', () => {
   const data = fresh();
-  data.decorate.food = data.decorate.food.slice(0, 2);
+  data.people[0].photo.file = 'assets/people/없는-사진.webp';
   const errs = validateData(data);
-  assert.ok(errs.some((e) => e.includes('food')), errs.join('\n'));
+  assert.ok(errs.some((e) => e.includes(data.people[0].id) && e.includes('사진')), errs.join('\n'));
+});
+
+test('인물 사진의 저작자·라이선스·원본 주소가 비면 오류', () => {
+  for (const key of ['author', 'license', 'source']) {
+    const data = fresh();
+    data.people[3].photo[key] = '';
+    const errs = validateData(data);
+    assert.ok(errs.some((e) => e.includes(data.people[3].id) && e.includes(key)), `${key}: ${errs.join('\n')}`);
+  }
 });

@@ -12,3 +12,6 @@ export const WORD_TYPES = {
   scramble: { title: '글자 뒤섞기', ask: '뒤섞인 글자를 바로 놓아 낱말을 맞혀요' },
   spelling: { title: '맞춤법 고치기', ask: '틀린 말을 바르게 고쳐 말해요' },
 };
+
+/** 인물 퀴즈(짬짬이 낱말의 인물퀴즈). 진행은 말놀이와 같다 */
+export const PERSON_TYPE = { title: '인물 퀴즈', ask: '사진을 보고 누구인지 맞혀요' };

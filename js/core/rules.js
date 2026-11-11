@@ -1,8 +1,6 @@
 // 규칙 안내 화면 문구. 선생님이 그대로 읽어 주는, 아이에게 하는 말투.
 // 저학년(lower)은 줄마다 25자 이하로 짧게 쓴다. 순위를 떠올리게 하는 말은 쓰지 않는다.
 
-const DRAW_PREP = '종이(공책 뒷장도 좋아요)와 연필을 꺼내요';
-
 const RULES = {
   greet: {
     lower: ['오늘은 선생님과 함께해요', '모둠끼리 힘을 모아요', '맞히면 ★, 발표해도 ★!'],
@@ -24,9 +22,9 @@ const RULES = {
     lower: ['이야기를 잘 듣고 생각해요', '내 생각을 친구와 나눠요', '발표하면 우리 모둠에 ★!'],
     other: ['이야기를 듣고 내 생각을 정해요', '모둠 친구와 생각을 나누고 발표해요', '정답은 없어요. 발표하면 ★을 받아요'],
   },
-  draw: {
-    lower: ['화면의 새 선을 따라 그려요', '천천히 내 속도로 그려도 돼요', '끝까지 그리면 모두 ★!'],
-    other: ['화면에 새로 나온 선을 따라 그려요', '다 그리면 색칠하고 나만의 꾸미기를 더해요', '끝까지 함께 그리면 모든 모둠에 ★'],
+  person: {
+    lower: ['사진 속 사람이 누구인지 맞혀요', '차례인 모둠만, 먼저 외치지 않아요', '맞히면 우리 모둠에 ★!'],
+    other: ['사진 속 인물이 누구인지 차례 모둠이 의논해서 답해요', '다른 모둠은 답을 먼저 외치지 않아요', '맞히면 ★, 못 맞히면 다음 모둠에게 넘어가요'],
   },
   celebrate: {
     lower: ['우리 반이 모은 별을 세어 봐요', '재미있던 순서에 손을 들어요'],
@@ -37,7 +35,5 @@ const RULES = {
 export function rulesFor(kind, band) {
   const r = RULES[kind];
   if (!r) return { lines: [] };
-  const out = { lines: (band === 'lower' ? r.lower : r.other).slice() };
-  if (kind === 'draw') out.prep = DRAW_PREP;
-  return out;
+  return { lines: (band === 'lower' ? r.lower : r.other).slice() };
 }

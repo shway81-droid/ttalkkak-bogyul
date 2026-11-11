@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 학년만 고르면 마우스 클릭만으로 40분 모둠 대항 수업(말놀이·몸으로 말해요/상식 퀴즈·이야기·따라 그리기)이 진행되는 독립 정적 사이트 '딸깍 보결'과, 화면 없이 쓰는 A4 진행 대본을 만든다.
+**Goal:** 학년만 고르면 마우스 클릭만으로 40분 모둠 대항 수업(말놀이·몸으로 말해요/상식 퀴즈·인물 퀴즈·이야기)이 진행되는 독립 정적 사이트 '딸깍 보결'과, 화면 없이 쓰는 A4 진행 대본을 만든다.
 
 **Architecture:** 빌드 단계 없는 정적 사이트. 브라우저와 Node가 함께 읽는 ES 모듈 `js/core/*`(계획 만들기·세션 상태·그리기 시간·무작위 뽑기 — DOM 없음, `node --test`로 검사)와 DOM을 그리는 `js/ui/*`·`js/activities/*`로 나눈다. 짬짬이 자료는 `scripts/import-jjam.mjs`가 `data/`로 복사·가공하고, 12세트는 손으로 쓴 `data/sets.json` 한 파일이다. 타이머는 하나뿐이고 활동은 그 타이머의 `tick(dt)`만 받는다 — 그래서 일시정지 하나로 모두 멈춘다.
 
@@ -22,7 +22,7 @@
 - **순위를 보여 주지 않는다**(1·2·3등, "이긴 모둠" 표시 금지). 마무리는 반 전체 별 합계다.
 - 화면 글은 아이들에게 하는 존댓말("~해요")이다. 규칙 안내 본문은 1920×1080에서 최소 32px이다.
 - 템플릿 문구에 `{title}`을 넣을 때 바로 뒤에 조사(이/가/을/를/은/는)를 붙이지 않는다("{title} 옆에", "{title}의"처럼 쓴다).
-- 화면 아래에 출처 "문항·이야기·그림: 짬짬이"를 표시한다.
+- 화면 아래에 출처 "문항·이야기·인물: 짬짬이"와 사진 출처 페이지 링크를 표시한다(Task 14).
 - 짬짬이 저장소는 **읽기만** 한다. `.cache/jjam-classroom`에 따로 받은 사본에서 읽고, 사용자의 `C:\Users\User\Desktop\claude2\jjam-classroom`은 건드리지 않는다.
 - GitHub 저장소 생성·공개 발행(Task 13)은 **사용자 확인을 받은 뒤에만** 한다.
 - 커밋 메시지 끝에 `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`를 붙인다.
@@ -486,6 +486,34 @@ export function mount(el, ctx) { /* el에 그림 */ return { tick(dtMs) {}, dest
 - [ ] **Step 4: CI** — `.github/workflows/ci.yml`: push·pull_request에서 Node 24, `npm ci`, `npm test`, `npx playwright install --with-deps chromium`, `npm run e2e`.
 - [ ] **Step 5: README** — 무엇인지, 쓰는 법(링크 열기 → 학년 → 시작), 개발(`npm run serve`, `npm test`, `npm run e2e`, `npm run import`), 자료 출처(짬짬이)와 글꼴 라이선스.
 - [ ] **Step 6: 커밋** — `git commit -m "test: 12세트 브라우저 검사·화면 크기 검사·CI"`
+
+---
+
+### Task 14: 따라 그리기 → 인물 퀴즈 (2026-11-11 변경)
+
+설계 문서 맨 위 "변경"과 5.5절. 따라 그리기는 종이·연필이 필요해 뺀다. 만든 코드는 `7fa2419`에 남아 있다.
+
+**Files:**
+- Create: `js/activities/person.js`, `credits.html`, `js/credits.js`, `data/people.json`·`assets/people/*.webp`(가져오기 생성물)
+- Delete: `js/activities/draw.js`, `js/core/drawing.js`, `data/drawings.json`, `data/decorate.json`, `tests/drawing.test.mjs`, 그리기 CSS
+- Modify: `scripts/import-jjam.mjs`, `scripts/validate-data.mjs`, `js/core/{flows,plan,data,rules,script}.js`, `js/activities/{index,word}.js`, `js/ui/{start,runner}.js`, `js/print.js`, `css/{app,print}.css`, `data/sets.json`, `sw.js`, `scripts/e2e.mjs`, `README.md`, 단위 검사들
+
+**Interfaces:**
+- Produces:
+  - `filterPeople(items): Item[]` (import-jjam) — `type==='person'`이고 주제가 가수·배우·예능인이거나 `level==='easy'`.
+  - `data/people.json` = `{ source, people: Person[] }`, `Person` = 짬짬이 낱말 필드 + `photo: { file: 'assets/people/<id>.webp', author, license, source }`. 사진은 `word/assets/people/`에서 같은 경로로 복사한다.
+  - `loadData`·`readDataDir` → `{ words, stories, people, quiz, sets }`
+  - `FLOWS`: lively `greet 3, word 10, team 10, person 8, story 7, celebrate 2`, calm `greet 3, story 7, word 10, team 10, person 8, celebrate 2`
+  - `BAND_PERSON_LEVELS = { lower: ['easy'], middle: ['easy','normal'], upper: ['easy','normal','hard'] }`
+  - `poolFor('person', set, data)`, 계획의 person 순서 `content = { deck }`, 제목 '인물 퀴즈'
+  - 활동 kind `person`: 말놀이와 같은 버튼(`hint`·`reveal`·`correct`·`pass`·`next-item`)에 사진(`[data-photo]`, `alt=""`)과 정답 뒤 사진 출처(`[data-credit]`)
+  - 대본 person 섹션: `items: {q: 힌트, a: 이름}[]` 10개, `LEVELS`에 `person: 10/8/6`
+
+- [ ] **Step 1: 실패하는 검사** — import(`filterPeople`), plan(흐름 순서·학년대 난이도·덱), validate(인물 풀 ≥ 20, 사진 파일·저작자·라이선스·원본 주소), rules(person 규칙, 준비물 없음), script(person 섹션 10개). `node --test "tests/*.test.mjs"` → FAIL
+- [ ] **Step 2: 구현** — 위 Interfaces. `node scripts/import-jjam.mjs --no-pull`(이미 받은 사본 그대로)로 `people.json`과 사진을 만든다.
+- [ ] **Step 3: e2e** — ACT_STEPS·SWEEP에 person, 그리기 검사를 인물 퀴즈 검사(사진이 실제로 뜸·alt 비어 있음·[맞혔어요] 두 번에 +1·정답 뒤 사진 출처·출처 페이지 299줄)로, 오프라인에서 인물 사진이 뜨는지.
+- [ ] **Step 4: 전체 확인** — `npm test`, `npm run stamp`, `npm run e2e` 전부 통과(진행 대본 12세트 A4 한 장 포함).
+- [ ] **Step 5: 커밋** — `git commit -m "feat: 따라 그리기 대신 인물 퀴즈"`
 
 ---
 

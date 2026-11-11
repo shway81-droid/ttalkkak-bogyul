@@ -197,61 +197,6 @@ ol {
   font-weight: 700;
 }
 
-.draw-title {
-  margin: 1mm 0 0.6mm;
-  font-weight: 700;
-}
-
-.thumbs {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 1mm;
-  padding: 0;
-  list-style: none;
-}
-
-.thumb {
-  position: relative;
-  border: 0.25mm solid var(--line);
-  border-radius: 1mm;
-  aspect-ratio: 1;
-  padding: 0.6mm;
-}
-
-.thumb svg {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-
-.thumb path {
-  fill: none;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.thumb path.old {
-  stroke: #a3a7b0;
-}
-
-.thumb path.new {
-  stroke: var(--ink);
-}
-
-.thumb-no {
-  position: absolute;
-  left: 0.6mm;
-  top: 0.2mm;
-  font-size: 7pt;
-  font-weight: 800;
-  color: var(--accent);
-}
-
-.decorate {
-  margin: 1mm 0 0;
-  font-weight: 600;
-}
-
 .foot {
   border-top: 0.25mm solid var(--line);
   padding-top: 1.2mm;

@@ -1,7 +1,6 @@
 // 세트 하나로 40분 계획(순서 6개)을 만든다.
-import { FLOWS, bandOf, BAND_DRAW_LEVEL } from './flows.js';
+import { FLOWS, bandOf, BAND_PERSON_LEVELS } from './flows.js';
 import { makeRng, makeDeck } from './rng.js';
-import { fitsSlot } from './drawing.js';
 
 const TITLES = {
   greet: '인사',
@@ -9,7 +8,7 @@ const TITLES = {
   gesture: '몸으로 말해요',
   quizboard: '상식 퀴즈',
   story: '이야기',
-  draw: '그리기',
+  person: '인물 퀴즈',
   celebrate: '축하',
 };
 
@@ -26,8 +25,8 @@ export function poolFor(slot, set, data) {
       return data.quiz.filter((q) => q.bands.includes(band));
     case 'story':
       return data.stories.filter((s) => s.grades.includes(band));
-    case 'draw':
-      return data.drawings.filter((d) => d.difficulty === BAND_DRAW_LEVEL[band] && fitsSlot(d));
+    case 'person':
+      return data.people.filter((p) => BAND_PERSON_LEVELS[band].includes(p.level));
     default:
       return [];
   }
@@ -36,12 +35,6 @@ export function poolFor(slot, set, data) {
 const pickOne = (arr, rng) => arr[Math.floor(rng() * arr.length)];
 // 덱마다 따로 씨앗을 주어, 덱을 뽑는 순서와 상관없이 같은 씨앗이면 같은 결과가 나오게 한다.
 const subRng = (rng) => makeRng(Math.floor(rng() * 4294967296));
-
-export function decorateFor(drawing, decorate, rng) {
-  const lines = decorate[drawing.theme] || [];
-  if (lines.length === 0) return '';
-  return pickOne(lines, rng).replaceAll('{title}', drawing.title);
-}
 
 /** 세트 → 계획 */
 export function buildPlan(set, data, rng) {
@@ -57,9 +50,8 @@ export function buildPlan(set, data, rng) {
       content = { deck: makeDeck(poolFor('team', set, data), subRng(rng)) };
     } else if (slot === 'story') {
       content = { story: pickOne(poolFor('story', set, data), rng) };
-    } else if (slot === 'draw') {
-      const drawing = pickOne(poolFor('draw', set, data), rng);
-      content = { drawing, decorate: decorateFor(drawing, data.decorate, rng) };
+    } else if (slot === 'person') {
+      content = { deck: makeDeck(poolFor('person', set, data), subRng(rng)) };
     }
     return { slot, kind, title: TITLES[kind], minutes, content };
   });

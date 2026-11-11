@@ -1,31 +1,31 @@
 // data/ 자료 검증. 테스트에서 불러 쓰고, CLI 로도 실행한다(실패하면 종료 코드 1).
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { poolFor } from '../js/core/plan.js';
+import { isFreeLicense } from '../js/core/license.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
-const MIN_POOL = { word: 30, gesture: 15, quizboard: 20, story: 3, draw: 3 };
-const POOL_NAME = { word: '말놀이', gesture: '몸으로 말해요', quizboard: '상식 퀴즈', story: '이야기', draw: '그리기' };
+const MIN_POOL = { word: 30, gesture: 15, quizboard: 20, story: 3, person: 20 };
+const POOL_NAME = { word: '말놀이', gesture: '몸으로 말해요', quizboard: '상식 퀴즈', story: '이야기', person: '인물 퀴즈' };
 const FLOW_IDS = ['lively', 'calm'];
-const PARTICLE_RE = /\{title\}(이|가|을|를|은|는)/;
+const PHOTO_FILE_RE = /^assets\/people\/[\w-]+\.webp$/;
 
-/** data/ 의 JSON 을 앱이 쓰는 모양({words, stories, drawings, quiz, sets, decorate})으로 읽는다 */
+/** data/ 의 JSON 을 앱이 쓰는 모양({words, stories, people, quiz, sets})으로 읽는다(js/core/data.js 와 같은 모양) */
 export function readDataDir(dir = join(ROOT, 'data')) {
   const read = (name) => JSON.parse(readFileSync(join(dir, name), 'utf8'));
   return {
     words: read('words.json').items,
     stories: read('stories.json').stories,
-    drawings: read('drawings.json').drawings,
+    people: read('people.json').people,
     quiz: read('quiz.json').items,
     sets: read('sets.json').sets,
-    decorate: read('decorate.json'),
   };
 }
 
-/** 오류 문구 목록. 빈 배열이면 통과 */
-export function validateData(data) {
+/** 오류 문구 목록. 빈 배열이면 통과. exists(경로)로 인물 사진 파일이 있는지 본다 */
+export function validateData(data, exists = (p) => existsSync(join(ROOT, p))) {
   const errs = [];
 
   // 1) 학년 1~6 × 흐름 2 = 12세트, 하나씩
@@ -45,7 +45,7 @@ export function validateData(data) {
       ['word', poolFor('word', set, data).length],
       [set.team.kind, poolFor('team', set, data).length],
       ['story', poolFor('story', set, data).length],
-      ['draw', poolFor('draw', set, data).length],
+      ['person', poolFor('person', set, data).length],
     ];
     for (const [kind, n] of checks) {
       const min = MIN_POOL[kind];
@@ -64,18 +64,15 @@ export function validateData(data) {
     if (a.team.kind === b.team.kind) errs.push(`${g}학년 두 세트의 모둠 놀이 종류가 같습니다: ${a.team.kind}`);
   }
 
-  // 4) 꾸미기 문구
-  const themes = new Set(data.drawings.map((d) => d.theme));
-  for (const theme of themes) {
-    const lines = data.decorate[theme];
-    if (!Array.isArray(lines) || lines.length !== 3) {
-      errs.push(`꾸미기 문구: ${theme} 주제는 3개여야 합니다`);
-      continue;
+  // 4) 인물 사진: 파일이 있고, 출처 페이지에 적을 저작자·라이선스·원본 주소가 있어야 한다
+  for (const p of data.people) {
+    const photo = p.photo || {};
+    if (!PHOTO_FILE_RE.test(photo.file || '') || !exists(photo.file)) errs.push(`인물 ${p.id}: 사진 파일이 없습니다 (${photo.file})`);
+    for (const key of ['author', 'license', 'source']) {
+      if (!String(photo[key] || '').trim()) errs.push(`인물 ${p.id}: 사진 ${key} 가 비어 있습니다`);
     }
-    for (const line of lines) {
-      if (!line.includes('{title}')) errs.push(`꾸미기 문구: ${theme} "${line}" 에 {title} 이 없습니다`);
-      if (PARTICLE_RE.test(line)) errs.push(`꾸미기 문구: ${theme} "${line}" 의 {title} 바로 뒤에 조사가 있습니다`);
-    }
+    if (photo.license && !isFreeLicense(photo.license)) errs.push(`인물 ${p.id}: 쓸 수 없는 라이선스입니다 (${photo.license})`);
+    if (!p.hint || !p.answer) errs.push(`인물 ${p.id}: 힌트나 정답이 없습니다`);
   }
 
   return errs;

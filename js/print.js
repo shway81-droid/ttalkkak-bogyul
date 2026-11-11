@@ -7,11 +7,11 @@ import { makeRng } from './core/rng.js';
 import { buildScript } from './core/script.js';
 import { h, fill } from './ui/dom.js';
 
-// 문항 수 단계: 넘치면 다음 단계로(설계: word·quiz 10→8, gesture 15→12).
+// 문항 수 단계: 넘치면 다음 단계로(설계: word·quiz·person 10→8, gesture 15→12).
 export const LEVELS = [
-  { word: 10, quizboard: 10, gesture: 15 },
-  { word: 8, quizboard: 8, gesture: 12 },
-  { word: 6, quizboard: 6, gesture: 10 },
+  { word: 10, quizboard: 10, person: 10, gesture: 15 },
+  { word: 8, quizboard: 8, person: 8, gesture: 12 },
+  { word: 6, quizboard: 6, person: 6, gesture: 10 },
 ];
 
 // A4 297mm − 위아래 여백 12mm×2 = 273mm. 화면과 인쇄의 줄바꿈 차이를 생각해 조금 남긴다.
@@ -21,23 +21,10 @@ const PX_PER_MM = 96 / 25.4;
 
 const sheet = document.getElementById('sheet');
 
-function drawThumbs(drawing) {
-  const [, , w, hgt] = drawing.viewBox.split(/[\s,]+/).map(Number);
-  const stroke = Math.max(2, Math.hypot(w, hgt) / 110);
-  return h('ol', { class: 'thumbs' },
-    drawing.steps.map((paths, i) => {
-      const prev = i === 0 ? 0 : drawing.steps[i - 1].length;
-      return h('li', { class: 'thumb' },
-        h('svg', { viewBox: drawing.viewBox, role: 'img', 'aria-label': `${i + 1}단계` },
-          paths.map((d, k) => h('path', { d, class: k >= prev ? 'new' : 'old', style: { strokeWidth: String(k >= prev ? stroke * 1.3 : stroke) } }))),
-        h('span', { class: 'thumb-no' }, String(i + 1)));
-    }));
-}
-
 function sectionBody(sec, kind, level) {
   const parts = [h('ul', { class: 'how' }, sec.how.map((l) => h('li', null, l)))];
   if (sec.items) {
-    const n = kind === 'word' ? level.word : level.quizboard;
+    const n = level[kind];
     parts.push(h('ol', { class: `items items-${kind}` },
       sec.items.slice(0, n).map((it) => h('li', null,
         h('span', { class: 'q' }, it.q), ' ',
@@ -54,11 +41,6 @@ function sectionBody(sec, kind, level) {
       h('p', { class: 'story-text' }, sec.story.text.join(' ')),
       h('p', { class: 'story-q' }, `❓ ${main}`),
       follow.length ? h('ul', { class: 'story-follow' }, follow.map((f) => h('li', null, f))) : null));
-  }
-  if (sec.drawing) {
-    parts.push(h('p', { class: 'draw-title' }, `✏️ ${sec.drawing.title} — 굵은 선이 그 단계에 새로 그리는 선이에요`));
-    parts.push(drawThumbs(sec.drawing));
-    if (sec.drawing.decorate) parts.push(h('p', { class: 'decorate' }, `🌈 꾸미기: ${sec.drawing.decorate}`));
   }
   return parts;
 }
@@ -82,7 +64,7 @@ function render(plan, script, level) {
       })),
     h('footer', { class: 'foot' },
       h('p', { class: 'tally' }, `★ 별 세기: ${script.tally}. 모둠끼리 비교하지 않고 “우리 반 별”로 함께 셉니다.`),
-      h('p', { class: 'credit' }, '딸깍 보결 · 문항·이야기·그림: 짬짬이')));
+      h('p', { class: 'credit' }, '딸깍 보결 · 문항·이야기·인물: 짬짬이')));
 }
 
 const fits = () => sheet.getBoundingClientRect().height <= (PAGE_MM - SAFETY_MM) * PX_PER_MM;

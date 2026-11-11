@@ -8,7 +8,7 @@ import { ACTIVITIES, STEP_ICON } from '../activities/index.js';
 
 const TICK_MS = 200;
 // 차례가 있는 놀이에서만 별판의 차례 모둠을 강조한다.
-const TURN_KINDS = new Set(['word', 'gesture']);
+const TURN_KINDS = new Set(['word', 'gesture', 'person']);
 // 축하 순서에서는 모둠별 별을 나란히 보여 주지 않는다(우리 반 합계만 — 모둠끼리 비교하지 않게).
 const CLASS_ONLY_KINDS = new Set(['celebrate']);
 
@@ -54,7 +54,7 @@ export function runSession(root, { plan, teamCount, sfx, onExit }) {
     ),
     h('section', { class: 'board', 'aria-label': '모둠 별판' }, teamsEl, h('div', { class: 'board-tools' }, totalEl, undoBtn)),
     h('div', { class: 'stage-wrap' }, stage, pausedBadge),
-    h('footer', { class: 'credit credit-small' }, '문항·이야기·그림: 짬짬이'),
+    h('footer', { class: 'credit credit-small' }, '문항·이야기·인물: 짬짬이'),
   );
   fill(root, shell);
 

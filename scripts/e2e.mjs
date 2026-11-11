@@ -63,12 +63,7 @@ ACT_STEPS.story = async (page, { teams }) => {
   return teams;
 };
 
-ACT_STEPS.draw = async (page, { teams }) => {
-  await click(page, 'draw-start');
-  await page.waitForTimeout(GUARD_WAIT);
-  await click(page, 'award-all');
-  return teams;
-};
+ACT_STEPS.person = ACT_STEPS.word;
 
 /** 세트를 열고 kind 순서의 활동 화면까지 바로 간다 */
 export async function openStep(page, base, { grade, flow = 'lively', teams = 6, kind }) {
@@ -167,22 +162,8 @@ const SWEEP = {
       }
     }
   },
-  draw: async (page, look) => {
-    await click(page, 'draw-start');
-    await page.waitForTimeout(GUARD_WAIT);
-    await look('단계');
-    const total = Number(await page.locator('[data-draw-step]').getAttribute('data-total-steps'));
-    for (let k = 1; k <= total; k++) {
-      await click(page, 'draw-next');
-      await page.waitForTimeout(GUARD_WAIT);
-    }
-    await look('색칠');
-    const coloring = Number(await page.locator('[data-coloring]').getAttribute('data-coloring'));
-    await page.clock.fastForward(coloring * 1000 + 1000);
-    await page.locator('[data-decorate]').waitFor();
-    await look('꾸미기');
-  },
 };
+SWEEP.person = SWEEP.word; // 힌트 → 정답(이름·사진 출처)까지
 
 /** 세트의 모든 순서를 돌며 규칙 화면·활동 화면·활동 안의 붐비는 화면이 넘치는지 본다(page.clock.install 뒤에 부른다) */
 export async function sweepScreens(page, base, { grade, flow, teams }) {
@@ -322,6 +303,48 @@ export const LIVE_CHECKS = {
   },
 };
 
+/** 사진이 다 읽힐 때까지 기다린 뒤 실제 크기(0이면 깨진 사진) */
+const photoWidth = (locator) => locator.evaluate((img) => (img.complete
+  ? img.naturalWidth
+  : new Promise((r) => { img.addEventListener('load', () => r(img.naturalWidth)); img.addEventListener('error', () => r(0)); })));
+
+/** 인물 퀴즈 화면과 사진 출처 페이지 */
+export async function checkPerson(ctx, base, check) {
+  const page = await ctx.newPage();
+  await openStep(page, base, { grade: 1, flow: 'lively', teams: 6, kind: 'person' });
+  const photo = page.locator('[data-photo]');
+  check('인물 퀴즈: 사진이 실제로 뜸', (await photoWidth(photo)) > 0, String(await photo.getAttribute('src')));
+  check('인물 퀴즈: 사진 alt 가 비어 있음(화면 읽기가 정답을 말하지 않게)', (await photo.getAttribute('alt')) === '');
+  check('인물 퀴즈: 사진이 화면 안에 다 보임', await inViewport(page, '[data-photo]'));
+  check('인물 퀴즈: 묻는 동안에는 사진 출처를 보이지 않음(원본 주소에 이름이 있음)', (await page.locator('[data-credit]').count()) === 0);
+  check('인물 퀴즈: 별판에 차례 모둠 표시', (await page.locator('.team.turn').count()) === 1);
+  const t0 = await totalStars(page);
+  await page.locator(act('correct')).dblclick();
+  await page.waitForTimeout(100);
+  check('인물 퀴즈: [맞혔어요] 두 번 눌러도 별 +1', (await totalStars(page)) === t0 + 1, `${t0} → ${await totalStars(page)}`);
+  const credit = page.locator('[data-credit]');
+  check('인물 퀴즈: 맞히면 사진 아래에 사진 출처', (await credit.isVisible()) && /^사진: .+ · .+/.test((await credit.innerText()).trim()), await credit.innerText().catch(() => ''));
+  await page.waitForTimeout(2600); // 2초 보여 준 뒤 다음 인물
+  await page.locator(act('reveal')).waitFor();
+  const src0 = await photo.getAttribute('src');
+  await page.waitForTimeout(GUARD_WAIT);
+  await click(page, 'reveal');
+  await page.waitForTimeout(GUARD_WAIT);
+  check('인물 퀴즈: [정답 보기] → 이름과 사진 출처, 사진은 그대로', (await page.locator('[data-answer]').isVisible()) && (await credit.isVisible()) && (await photo.getAttribute('src')) === src0);
+  await page.close();
+
+  const cp = await ctx.newPage();
+  await open(cp, base);
+  await cp.locator(act('credits')).click();
+  await cp.locator('body[data-credits-ready]').waitFor();
+  const people = JSON.parse(readFileSync(new URL('../data/people.json', import.meta.url), 'utf8')).people.length;
+  const rows = await cp.locator('[data-credit-row]').count();
+  check(`사진 출처 페이지: 인물 ${people}명 모두`, people > 0 && rows === people, `${rows}줄`);
+  const noLink = await cp.locator('[data-credit-row]').evaluateAll((els) => els.filter((r) => !/^https:\/\//.test(r.querySelector('a[data-source]')?.href || '')).length);
+  check('사진 출처 페이지: 줄마다 저작자·라이선스·원본 링크', noLink === 0, `원본 링크 없는 줄 ${noLink}`);
+  await cp.close();
+}
+
 // ---------------------------------------------------------------------------
 
 const results = [];
@@ -344,7 +367,8 @@ async function main() {
       check('학년 고르기 전 [시작] 꺼짐', await page.locator(act('start')).isDisabled());
       await click(page, 'grade-2');
       check('학년 고르면 [시작] 켜짐', await page.locator(act('start')).isEnabled());
-      check('출처 표시', (await page.locator('body').innerText()).includes('문항·이야기·그림: 짬짬이'));
+      check('출처 표시', (await page.locator('body').innerText()).includes('문항·이야기·인물: 짬짬이'));
+      check('사진 출처 페이지 링크', (await page.locator(act('credits')).getAttribute('href')) === 'credits.html');
       await page.close();
     }
 
@@ -485,41 +509,8 @@ async function main() {
       await page.close();
     }
 
-    // 따라 그리기와 꾸미기 (Task 10) — 가짜 시계로 시간을 건너뛴다
-    {
-      const page = await ctx.newPage();
-      await page.clock.install();
-      await openStep(page, base, { grade: 3, flow: 'calm', teams: 6, kind: 'draw' });
-      check('그리기: 준비 화면에 준비 안내', (await page.locator('[data-setup]').innerText()).trim().length > 0);
-      await click(page, 'draw-start');
-      await page.waitForTimeout(GUARD_WAIT);
-      const total = Number(await page.locator('[data-draw-step]').getAttribute('data-total-steps'));
-      const k0 = await page.locator('[data-draw-step]').getAttribute('data-draw-step');
-      await click(page, 'pause');
-      await page.clock.fastForward(30000);
-      const k1 = await page.locator('[data-draw-step]').getAttribute('data-draw-step');
-      check('그리기: ⏸ 동안 30초가 지나도 단계 그대로', k0 === k1 && k0 === '1', `${k0} → ${k1}`);
-      await click(page, 'pause');
-      await page.clock.fastForward(40000);
-      const k2 = Number(await page.locator('[data-draw-step]').getAttribute('data-draw-step'));
-      check('그리기: ▶ 뒤 시간이 지나면 다음 단계로 저절로', k2 > 1, String(k2));
-      for (let i = k2; i <= total; i++) {
-        await click(page, 'draw-next');
-        await page.waitForTimeout(GUARD_WAIT);
-      }
-      check('그리기: [다음]을 끝까지 → 색칠 화면', await page.locator('[data-coloring]').isVisible());
-      const coloring = Number(await page.locator('[data-coloring]').getAttribute('data-coloring'));
-      await page.clock.fastForward(coloring * 1000 + 1000);
-      const deco = page.locator('[data-decorate]');
-      const text = (await deco.innerText()).trim();
-      check('그리기: 색칠이 끝나면 꾸미기 문구, {title} 없음', (await deco.isVisible()) && text.length > 0 && !text.includes('{title}'), text);
-      await page.waitForTimeout(GUARD_WAIT);
-      const t0 = await totalStars(page);
-      await page.locator(act('award-all')).dblclick();
-      await page.waitForTimeout(100);
-      check('그리기: [모두 ★] 두 번 눌러도 한 번', (await totalStars(page)) === t0 + 6);
-      await page.close();
-    }
+    // 인물 퀴즈 (Task 14)
+    await checkPerson(ctx, base, check);
 
     // [▶ 시작] 두 번 누름이 활동 버튼에 닿지 않음
     {
@@ -624,6 +615,10 @@ async function main() {
         await click(page, 'start-step');
         const firstKind = await page.locator('[data-kind]').first().getAttribute('data-kind');
         check('오프라인: g1-lively 첫 순서가 뜸', firstKind === 'greet', String(firstKind));
+        await page.locator('[data-step-kind="person"]').click();
+        await click(page, 'start-step');
+        await page.locator('[data-photo]').waitFor();
+        check('오프라인: 인물 사진도 뜸', (await photoWidth(page.locator('[data-photo]'))) > 0);
         await open(page, `${base}print.html?grade=1&flow=lively`);
         await page.locator('body[data-ready]').waitFor();
         check('오프라인: 진행 대본도 열림', (await page.locator('body').innerText()).includes('바를 정 자'));

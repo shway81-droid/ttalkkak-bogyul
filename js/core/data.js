@@ -1,7 +1,7 @@
-// 자료 읽기. 앱 안에서 쓰는 모양은 {words, stories, drawings, quiz, sets, decorate}
+// 자료 읽기. 앱 안에서 쓰는 모양은 {words, stories, people, quiz, sets}
 // (scripts/validate-data.mjs 의 readDataDir 와 같은 모양).
 
-const FILES = ['words', 'stories', 'drawings', 'quiz', 'sets', 'decorate'];
+const FILES = ['words', 'stories', 'people', 'quiz', 'sets'];
 
 export async function loadData(fetchFn = fetch, base = 'data/') {
   const raw = await Promise.all(
@@ -11,13 +11,12 @@ export async function loadData(fetchFn = fetch, base = 'data/') {
       return res.json();
     }),
   );
-  const [words, stories, drawings, quiz, sets, decorate] = raw;
+  const [words, stories, people, quiz, sets] = raw;
   return {
     words: words.items,
     stories: stories.stories,
-    drawings: drawings.drawings,
+    people: people.people,
     quiz: quiz.items,
     sets: sets.sets,
-    decorate,
   };
 }

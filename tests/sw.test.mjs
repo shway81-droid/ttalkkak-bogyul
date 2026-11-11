@@ -7,7 +7,7 @@ import { join, relative, sep } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
-import { assetsHash } from '../scripts/sw-version.mjs';
+import { assetsHash, listAssets } from '../scripts/sw-version.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 
@@ -84,8 +84,12 @@ test('설치할 때 브라우저 HTTP 캐시를 거치지 않고 ASSETS 전부�
 
 test('화면에 필요한 파일이 모두 ASSETS 에 있다', () => {
   const assets = new Set(readAssets());
-  const need = ['./index.html', './print.html', './manifest.json', './favicon.svg'];
+  const need = ['./index.html', './print.html', './credits.html', './manifest.json', './favicon.svg'];
   for (const dir of ['js', 'css', 'data', 'assets']) need.push(...walk(join(ROOT, dir)));
   const missing = need.filter((f) => !assets.has(f));
   assert.deepEqual(missing, []);
+});
+
+test('ASSETS 는 npm run stamp 가 실제 파일로 만든 목록과 같다(사진을 다시 가져오면 npm run stamp)', () => {
+  assert.deepEqual(readAssets(), listAssets(ROOT));
 });

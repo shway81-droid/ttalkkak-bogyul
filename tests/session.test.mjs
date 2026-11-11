@@ -5,7 +5,7 @@ import {
   addStar, removeStar, awardTurn, passTurn, awardTeams, awardAll, undo, totalStars,
 } from '../js/core/session.js';
 
-// greet 3, word 10, team 10, story 7, draw 8, celebrate 2
+// 순서 6개의 분만 쓰는 가짜 계획(합 40분)
 const PLAN = {
   steps: [3, 10, 10, 7, 8, 2].map((minutes, i) => ({ kind: `k${i}`, minutes })),
 };

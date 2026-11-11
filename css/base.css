@@ -12,7 +12,6 @@
   --ok: #06d6a0;
   --ok-ink: #06322a;
   --warn: #ef476f;
-  --seg-c: #5aa0d8;
   --seg-m: #8f80e0;
   --seg-h: #f08a40;
   --seg-n: #9aa5b1;
@@ -127,6 +126,10 @@ button:focus-visible {
   font-size: 0.75rem;
   text-align: center;
   opacity: 0.8;
+}
+
+.credit a {
+  color: inherit;
 }
 
 [hidden] {

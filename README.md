@@ -10,7 +10,7 @@
 3. **[▶ 시작]** 을 누릅니다. 순서마다 규칙 안내가 먼저 나오니, 읽어 주고 [▶ 시작]을 누르면 됩니다.
 4. 시간이 다 되면 위쪽 **[다음 순서 ▶]** 가 천천히 빛납니다. 넘어가는 것은 선생님이 정합니다.
 
-40분은 인사 → 말놀이 → 몸으로 말해요(또는 상식 퀴즈) → 이야기 나누기 → 따라 그리기 → 별 축하 순서입니다(차분하게 열기는 그리기·이야기가 먼저).
+40분은 인사 → 말놀이 → 몸으로 말해요(또는 상식 퀴즈) → 인물 퀴즈 → 이야기 나누기 → 별 축하 순서입니다(차분하게 열기는 이야기가 먼저). 종이·연필 같은 준비물은 필요 없습니다.
 모둠 별은 다 함께 모아 "우리 반 별"로 축하합니다. 모둠 순위는 보여 주지 않습니다.
 
 - **진행 대본:** 학년을 고른 뒤 첫 화면 아래 [🖨 … 선생님용 진행 대본 인쇄]를 누르면 그 학년의 A4 한 장 대본이 열립니다. 화면을 못 쓰는 교실에서도 말과 칠판만으로 진행할 수 있습니다.
@@ -26,15 +26,15 @@ npx playwright install chromium   # 처음 한 번
 npm run serve                     # http://localhost:4173
 npm test                          # 단위 검사 + 자료 검증 + 글꼴 글자 검사
 npm run e2e                       # 브라우저 검사(12세트, 작은 화면, 진행 대본, 오프라인)
-npm run import                    # 짬짬이 자료 다시 가져오기(data/*.json)
-npm run stamp                     # 화면 파일을 바꾼 뒤 sw.js 캐시 이름 새로 찍기
+npm run import                    # 짬짬이 자료 다시 가져오기(data/*.json, 인물 사진 assets/people/)
+npm run stamp                     # 화면 파일을 바꾼 뒤 sw.js 파일 목록·캐시 이름 새로 찍기
 ```
 
-- 화면 파일(`js/`·`css/`·`data/`·`assets/`·html 등)을 **바꾼 뒤에는 `npm run stamp`** 로 `sw.js` 의 캐시 이름을 새로 찍습니다. 그래야 배포 뒤 브라우저가 옛 파일 대신 새 파일을 한꺼번에 받습니다(`npm test` 가 잊으면 알려 줍니다).
-- 파일을 더하거나 빼면 `sw.js` 의 `ASSETS` 도 고칩니다(`tests/sw.test.mjs` 가 맞춰 봅니다).
+- 화면 파일(`js/`·`css/`·`data/`·`assets/`·html 등)을 **더하거나 빼거나 바꾼 뒤에는 `npm run stamp`** 로 `sw.js` 의 파일 목록(`ASSETS`)과 캐시 이름을 새로 찍습니다. 그래야 인터넷이 끊겨도 모든 화면이 열리고, 배포 뒤 브라우저가 옛 파일 대신 새 파일을 한꺼번에 받습니다(`npm test` 가 잊으면 알려 줍니다).
 - 자료를 바꾸면 `node scripts/validate-data.mjs` 로 세트마다 후보가 충분한지 확인합니다.
 
 ## 출처와 라이선스
 
-- 문항·이야기·그림 자료: **짬짬이**(같은 저작자의 [짬짬이 교실](https://github.com/shway81-droid/jjam-classroom)에서 `npm run import` 로 복사).
+- 문항·이야기·인물 자료: **짬짬이**(같은 저작자의 [짬짬이 교실](https://github.com/shway81-droid/jjam-classroom)에서 `npm run import` 로 복사). 인물은 가수·배우·예능인 전체와 역사 인물·과학자·예술가·운동선수 가운데 쉬운 인물만 씁니다.
+- 인물 사진: 위키미디어 공용 등의 자유 라이선스 사진(크기 조정). 사진마다 저작자·라이선스·원본은 [`credits.html`](credits.html)(첫 화면 아래 "인물 사진 출처")에 있습니다. 자료 검증이 비영리(NC)·변경금지(ND) 라이선스를 막습니다.
 - 글꼴: [Pretendard](https://github.com/orioncactus/pretendard) 서브셋, SIL Open Font License 1.1 — [`assets/fonts/LICENSE.txt`](assets/fonts/LICENSE.txt).

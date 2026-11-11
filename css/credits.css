@@ -1,0 +1,54 @@
+/* 인물 사진 출처 페이지: 길게 읽고 내려 보는 밝은 문서 */
+body {
+  margin: 0;
+  background: #fff;
+  color: #1d2433;
+  font-family: 'Pretendard', 'Pretendard Variable', system-ui, -apple-system, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  line-height: 1.6;
+}
+
+.credits {
+  max-width: 64rem;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 3rem;
+}
+
+h1 {
+  margin: 0.5rem 0;
+  font-size: 1.6rem;
+}
+
+.lead,
+.count {
+  color: #4a5468;
+}
+
+a {
+  color: #0b5cad;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 0.35rem 0.5rem;
+  border-bottom: 1px solid #e3e7ef;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+
+th {
+  position: sticky;
+  top: 0;
+  background: #f4f6fa;
+}
+
+td.no {
+  color: #8a93a6;
+  font-variant-numeric: tabular-nums;
+}

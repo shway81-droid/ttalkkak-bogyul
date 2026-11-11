@@ -1,17 +1,17 @@
 {
   "version": 1,
   "sets": [
-    { "id": "g1-lively", "grade": 1, "flow": "lively", "word": { "types": ["riddle", "mimetic"], "levels": ["easy"] }, "team": { "kind": "gesture", "levels": ["easy"] }, "story": {}, "draw": {} },
-    { "id": "g1-calm", "grade": 1, "flow": "calm", "word": { "types": ["opposite", "choseong"], "levels": ["easy"] }, "team": { "kind": "quizboard" }, "story": {}, "draw": {} },
-    { "id": "g2-lively", "grade": 2, "flow": "lively", "word": { "types": ["choseong", "mimetic"], "levels": ["easy"] }, "team": { "kind": "quizboard" }, "story": {}, "draw": {} },
-    { "id": "g2-calm", "grade": 2, "flow": "calm", "word": { "types": ["riddle", "opposite"], "levels": ["easy"] }, "team": { "kind": "gesture", "levels": ["easy"] }, "story": {}, "draw": {} },
-    { "id": "g3-lively", "grade": 3, "flow": "lively", "word": { "types": ["choseong", "riddle"], "levels": ["easy", "normal"] }, "team": { "kind": "gesture", "levels": ["normal"] }, "story": {}, "draw": {} },
-    { "id": "g3-calm", "grade": 3, "flow": "calm", "word": { "types": ["proverb", "scramble"], "levels": ["easy", "normal"] }, "team": { "kind": "quizboard" }, "story": {}, "draw": {} },
-    { "id": "g4-lively", "grade": 4, "flow": "lively", "word": { "types": ["proverb", "scramble"], "levels": ["normal"] }, "team": { "kind": "quizboard" }, "story": {}, "draw": {} },
-    { "id": "g4-calm", "grade": 4, "flow": "calm", "word": { "types": ["choseong", "riddle"], "levels": ["normal"] }, "team": { "kind": "gesture", "levels": ["normal"] }, "story": {}, "draw": {} },
-    { "id": "g5-lively", "grade": 5, "flow": "lively", "word": { "types": ["idiom", "fourword"], "levels": ["normal"] }, "team": { "kind": "gesture", "levels": ["hard"] }, "story": {}, "draw": {} },
-    { "id": "g5-calm", "grade": 5, "flow": "calm", "word": { "types": ["proverb", "spelling"], "levels": ["normal"] }, "team": { "kind": "quizboard" }, "story": {}, "draw": {} },
-    { "id": "g6-lively", "grade": 6, "flow": "lively", "word": { "types": ["fourword", "proverb"], "levels": ["normal", "hard"] }, "team": { "kind": "quizboard" }, "story": {}, "draw": {} },
-    { "id": "g6-calm", "grade": 6, "flow": "calm", "word": { "types": ["idiom", "spelling"], "levels": ["normal", "hard"] }, "team": { "kind": "gesture", "levels": ["hard"] }, "story": {}, "draw": {} }
+    { "id": "g1-lively", "grade": 1, "flow": "lively", "word": { "types": ["riddle", "mimetic"], "levels": ["easy"] }, "team": { "kind": "gesture", "levels": ["easy"] }, "story": {}, "person": {} },
+    { "id": "g1-calm", "grade": 1, "flow": "calm", "word": { "types": ["opposite", "choseong"], "levels": ["easy"] }, "team": { "kind": "quizboard" }, "story": {}, "person": {} },
+    { "id": "g2-lively", "grade": 2, "flow": "lively", "word": { "types": ["choseong", "mimetic"], "levels": ["easy"] }, "team": { "kind": "quizboard" }, "story": {}, "person": {} },
+    { "id": "g2-calm", "grade": 2, "flow": "calm", "word": { "types": ["riddle", "opposite"], "levels": ["easy"] }, "team": { "kind": "gesture", "levels": ["easy"] }, "story": {}, "person": {} },
+    { "id": "g3-lively", "grade": 3, "flow": "lively", "word": { "types": ["choseong", "riddle"], "levels": ["easy", "normal"] }, "team": { "kind": "gesture", "levels": ["normal"] }, "story": {}, "person": {} },
+    { "id": "g3-calm", "grade": 3, "flow": "calm", "word": { "types": ["proverb", "scramble"], "levels": ["easy", "normal"] }, "team": { "kind": "quizboard" }, "story": {}, "person": {} },
+    { "id": "g4-lively", "grade": 4, "flow": "lively", "word": { "types": ["proverb", "scramble"], "levels": ["normal"] }, "team": { "kind": "quizboard" }, "story": {}, "person": {} },
+    { "id": "g4-calm", "grade": 4, "flow": "calm", "word": { "types": ["choseong", "riddle"], "levels": ["normal"] }, "team": { "kind": "gesture", "levels": ["normal"] }, "story": {}, "person": {} },
+    { "id": "g5-lively", "grade": 5, "flow": "lively", "word": { "types": ["idiom", "fourword"], "levels": ["normal"] }, "team": { "kind": "gesture", "levels": ["hard"] }, "story": {}, "person": {} },
+    { "id": "g5-calm", "grade": 5, "flow": "calm", "word": { "types": ["proverb", "spelling"], "levels": ["normal"] }, "team": { "kind": "quizboard" }, "story": {}, "person": {} },
+    { "id": "g6-lively", "grade": 6, "flow": "lively", "word": { "types": ["fourword", "proverb"], "levels": ["normal", "hard"] }, "team": { "kind": "quizboard" }, "story": {}, "person": {} },
+    { "id": "g6-calm", "grade": 6, "flow": "calm", "word": { "types": ["idiom", "spelling"], "levels": ["normal", "hard"] }, "team": { "kind": "gesture", "levels": ["hard"] }, "story": {}, "person": {} }
   ]
 }

@@ -1,7 +1,8 @@
 // 말놀이 모둠 대항: 문제 → 의논 10초 → 차례 모둠이 답 → [맞혔어요]면 ★ 하고 다음 모둠.
+// 인물 퀴즈(kind person)도 같은 진행이다. 문제 대신 사진을 크게 보여 주고, 정답이 나오면 사진 출처를 붙인다.
 // 모든 시간은 tick 으로만 줄인다(setTimeout 금지).
 import { h, fill } from '../ui/dom.js';
-import { WORD_TYPES } from '../core/wordTypes.js';
+import { WORD_TYPES, PERSON_TYPE } from '../core/wordTypes.js';
 
 export const DISCUSS_SEC = 10;
 const FLASH_MS = 2000;
@@ -16,7 +17,10 @@ function promptSize(text) {
 
 export function mount(el, ctx) {
   const { deck } = ctx.step.content;
+  const isPerson = ctx.step.kind === 'person';
   let item = null;
+  // 사진은 문제마다 한 번만 만든다(화면을 다시 그릴 때마다 새로 만들면 깜빡인다).
+  let photo = null;
   let originTurn = 0;
   let discussMs = 0;
   let flashMs = 0;
@@ -27,6 +31,8 @@ export function mount(el, ctx) {
 
   function newItem() {
     item = deck.next();
+    // alt 는 비운다: 화면 읽기 프로그램이 정답을 읽어 주지 않게(짬짬이와 같음)
+    photo = isPerson ? h('img', { class: 'person-photo', src: item.photo.file, alt: '', draggable: 'false', 'data-photo': '' }) : null;
     originTurn = ctx.api.currentTurn();
     discussMs = DISCUSS_SEC * 1000;
     hintShown = false;
@@ -99,7 +105,7 @@ export function mount(el, ctx) {
   }
 
   function render() {
-    const type = WORD_TYPES[item.type] || { title: '말놀이', ask: '' };
+    const type = isPerson ? PERSON_TYPE : WORD_TYPES[item.type] || { title: '말놀이', ask: '' };
     const turn = ctx.api.currentTurn();
     const sec = Math.max(0, Math.ceil(discussMs / 1000));
     let who;
@@ -122,20 +128,36 @@ export function mount(el, ctx) {
     } else if (mode === 'revealed') {
       buttons = [h('button', { class: 'btn btn-big btn-go', type: 'button', 'data-act': 'next-item', onClick: onNextItem }, '다음 문제 ▶')];
     } else {
-      buttons = [h('p', { class: 'teacher-note' }, '잠시 뒤 다음 문제가 나와요')];
+      buttons = [h('p', { class: 'teacher-note' }, isPerson ? '잠시 뒤 다음 인물이 나와요' : '잠시 뒤 다음 문제가 나와요')];
     }
 
-    fill(el,
-      h('div', { class: 'word' },
+    const tag = h('p', { class: 'word-tag' }, `${type.title}${item.topic ? ` · ${item.topic}` : ''}`);
+    const ask = h('p', { class: 'word-ask' }, type.ask);
+    const hint = hintShown && mode === 'ask' ? h('p', { class: 'word-hint' }, `💡 ${item.hint}`) : null;
+    const answer = mode !== 'ask' ? answerBlock() : null;
+    const body = isPerson
+      ? h('div', { class: 'word person' },
         who,
-        h('p', { class: 'word-tag' }, `${type.title}${item.topic ? ` · ${item.topic}` : ''}`),
-        h('p', { class: 'word-ask' }, type.ask),
+        h('div', { class: 'person-main' },
+          h('figure', { class: 'person-figure' },
+            photo,
+            // 사진 출처는 정답이 나온 뒤에: 원본 주소·저작자에 이름이 들어 있을 수 있다
+            mode !== 'ask' ? h('figcaption', { class: 'person-credit', 'data-credit': '' }, `사진: ${item.photo.author} · ${item.photo.license}`) : null),
+          h('div', { class: 'person-side' },
+            tag,
+            ask,
+            h('p', { class: 'word-prompt size-lg', 'data-prompt': '' }, item.prompt),
+            hint,
+            answer)))
+      : h('div', { class: 'word' },
+        who,
+        tag,
+        ask,
         h('p', { class: `word-prompt size-${promptSize(item.prompt)}${item.type === 'choseong' ? ' spaced' : ''}`, 'data-prompt': '' }, item.prompt),
-        hintShown && mode === 'ask' ? h('p', { class: 'word-hint' }, `💡 ${item.hint}`) : null,
-        mode !== 'ask' ? answerBlock() : null,
-      ),
-      h('div', { class: 'act-buttons' }, buttons),
-    );
+        hint,
+        answer);
+
+    fill(el, body, h('div', { class: 'act-buttons' }, buttons));
   }
 
   newItem();
