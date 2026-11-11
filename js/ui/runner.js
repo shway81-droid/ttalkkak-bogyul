@@ -23,7 +23,7 @@ export function runSession(root, { plan, teamCount, sfx, onExit }) {
 
   // ---- 위쪽 띠 --------------------------------------------------------------
   const pills = plan.steps.map((step, i) =>
-    h('button', { class: 'pill', type: 'button', 'data-act': `goto-${i}`, title: `${step.title} ${step.minutes}분`, onClick: () => goTo(i) },
+    h('button', { class: 'pill', type: 'button', 'data-act': `goto-${i}`, 'data-step-kind': step.kind, title: `${step.title} ${step.minutes}분`, onClick: () => goTo(i) },
       h('span', { class: 'pill-no' }, String(i + 1)), ' ', step.title),
   );
   const timerEl = h('span', { class: 'timer', 'data-remain': '', 'aria-live': 'off' });

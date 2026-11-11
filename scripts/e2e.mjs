@@ -21,6 +21,29 @@ export async function totalStars(page) {
  */
 export const ACT_STEPS = {};
 
+ACT_STEPS.word = async (page) => {
+  await click(page, 'correct');
+  return 1;
+};
+
+/** 세트를 열고 kind 순서의 활동 화면까지 바로 간다 */
+export async function openStep(page, base, { grade, flow = 'lively', teams = 6, kind }) {
+  await page.goto(base);
+  await click(page, `grade-${grade}`);
+  await click(page, `flow-${flow}`);
+  await click(page, `teams-${teams}`);
+  await click(page, 'start');
+  await page.locator(`[data-step-kind="${kind}"]`).first().click();
+  await click(page, 'start-step');
+  await page.locator(`[data-kind="${kind}"]`).waitFor();
+}
+
+const inViewport = async (page, selector) => {
+  const box = await page.locator(selector).first().boundingBox();
+  const vp = page.viewportSize();
+  return !!box && box.x >= 0 && box.y >= 0 && box.x + box.width <= vp.width + 1 && box.y + box.height <= vp.height + 1;
+};
+
 /** 첫 화면에서 세트를 골라 축하 화면까지 진행한다 */
 export async function runSet(page, { grade, flow, teams }, base) {
   const errors = [];
@@ -98,6 +121,42 @@ async function main() {
       await page.waitForTimeout(2000);
       const after = await page.locator('[data-remain]').innerText();
       check('⏸ 뒤 2초 동안 남은 시간 그대로', before === after, `${before} → ${after}`);
+      await page.close();
+    }
+
+    // 말놀이 (Task 7)
+    {
+      const page = await ctx.newPage();
+      await openStep(page, base, { grade: 3, flow: 'lively', teams: 6, kind: 'word' });
+      check('말놀이: 문제 글자가 화면 안에 다 보임', await inViewport(page, '[data-prompt]'));
+      const t0 = await totalStars(page);
+      await page.locator(act('correct')).dblclick();
+      await page.waitForTimeout(100);
+      check('말놀이: [맞혔어요] 두 번 눌러도 별 +1', (await totalStars(page)) === t0 + 1, `${t0} → ${await totalStars(page)}`);
+      await page.waitForTimeout(2600); // 정답 2초 보여 준 뒤 다음 문제
+      await page.locator(act('pass')).waitFor();
+      const startTurn = await page.locator('[data-turn]').getAttribute('data-turn');
+      for (let i = 0; i < 6; i++) {
+        await page.waitForTimeout(GUARD_WAIT);
+        await click(page, 'pass');
+      }
+      const answerShown = await page.locator('[data-answer]').isVisible();
+      const onlyNext = (await page.locator(act('next-item')).isVisible())
+        && (await page.locator(act('correct')).count()) === 0
+        && (await page.locator(act('pass')).count()) === 0;
+      check('말놀이: 모둠 수만큼 넘기면 정답과 [다음 문제]만', answerShown && onlyNext);
+      await click(page, 'next-item');
+      const nextTurn = await page.locator('[data-turn]').getAttribute('data-turn');
+      check('말놀이: 아무도 못 맞힌 다음 문제는 다음 모둠 차례', Number(nextTurn) === (Number(startTurn) + 1) % 6, `${startTurn} → ${nextTurn}`);
+      await click(page, 'pause');
+      const d1 = await page.locator('[data-discuss]').getAttribute('data-discuss');
+      await page.waitForTimeout(1500);
+      const d2 = await page.locator('[data-discuss]').getAttribute('data-discuss');
+      check('말놀이: ⏸ 동안 의논 시간이 줄지 않음', d1 === d2, `${d1} → ${d2}`);
+      await click(page, 'pause');
+      await page.waitForTimeout(1300);
+      const d3 = await page.locator('[data-discuss]').getAttribute('data-discuss');
+      check('말놀이: ▶ 다시 누르면 의논 시간이 줄어듦', Number(d3) < Number(d2), `${d2} → ${d3}`);
       await page.close();
     }
   } finally {

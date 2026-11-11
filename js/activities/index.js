@@ -2,6 +2,7 @@
 import { h, fill } from '../ui/dom.js';
 import * as greet from './greet.js';
 import * as celebrate from './celebrate.js';
+import * as word from './word.js';
 
 export const STEP_ICON = {
   greet: '👋',
@@ -23,7 +24,7 @@ const placeholder = {
 
 export const ACTIVITIES = {
   greet,
-  word: placeholder,
+  word,
   gesture: placeholder,
   quizboard: placeholder,
   story: placeholder,
