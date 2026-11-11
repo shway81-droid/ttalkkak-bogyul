@@ -1,0 +1,38 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { parseQuizGame, filterWords, QUIZ_TOPICS, WORD_TYPES_KEPT } from '../scripts/import-jjam.mjs';
+
+const SAMPLE = "const Q = [\n  { q: \"<span class='q-emoji'>🚗</span><br>이 탈것의 이름은?\", a: \"자동차\", o: [\"경주용차\", \"여객선\", \"케이블카\"] },\n  { q: '물이 얼면?', a: '얼음', o: ['수증기','소금','모래'] },\n];";
+
+test('parseQuizGame: 문항을 읽고 이모지를 떼어 낸다', () => {
+  const items = parseQuizGame(SAMPLE, 'vehicle-quiz');
+  assert.equal(items.length, 2);
+  assert.equal(items[0].emoji, '🚗');
+  assert.equal(items[0].q, '이 탈것의 이름은?');
+  assert.equal(items[0].a, '자동차');
+  assert.deepEqual(items[0].o, ['경주용차', '여객선', '케이블카']);
+  assert.equal(items[0].topic, 'vehicle-quiz');
+  assert.equal(items[0].id, 'vehicle-quiz-1');
+  assert.deepEqual(items[0].bands, QUIZ_TOPICS['vehicle-quiz']);
+  assert.equal('emoji' in items[1], false);
+  assert.equal(items[1].q, '물이 얼면?');
+  assert.equal(items[1].id, 'vehicle-quiz-2');
+});
+
+test('parseQuizGame: 다른 HTML 태그가 남는 문항은 버린다', () => {
+  const src = "const Q = [\n  { q: '<b>굵게</b> 무엇?', a: '가', o: ['나','다','라'] },\n  { q: '보통 문항?', a: '가', o: ['나','다','라'] },\n];";
+  const items = parseQuizGame(src, 'animal-quiz');
+  assert.equal(items.length, 1);
+  assert.equal(items[0].q, '보통 문항?');
+});
+
+test('QUIZ_TOPICS: 한 주제가 여러 학년대에 들 수 있다', () => {
+  assert.deepEqual(QUIZ_TOPICS['vehicle-quiz'], ['lower']);
+  assert.deepEqual(QUIZ_TOPICS['magnet-quiz'], ['middle', 'upper']);
+});
+
+test('filterWords: 쓰지 않는 유형은 버린다', () => {
+  const items = ['person', 'chain', 'relay', 'urimal', ...WORD_TYPES_KEPT].map((type, i) => ({ id: `w${i}`, type }));
+  const kept = filterWords(items);
+  assert.deepEqual(kept.map((w) => w.type), WORD_TYPES_KEPT);
+});
