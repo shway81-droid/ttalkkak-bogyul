@@ -894,3 +894,148 @@
   border-color: var(--ok);
   color: var(--ok-ink);
 }
+
+/* ---------- 이야기 나누기 ---------- */
+.story {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.4vh;
+  padding: 1.5vh 4vw 0;
+  text-align: center;
+}
+
+.stages {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.stages li {
+  padding: 0.2em 0.8em;
+  border-radius: 999px;
+  background: var(--panel);
+  color: var(--muted);
+}
+
+.stages li.on {
+  background: var(--seg-m);
+  color: #fff;
+}
+
+.stages li.done {
+  opacity: 0.5;
+}
+
+.story-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.6vh;
+  max-width: 64rem;
+}
+
+.story-title {
+  font-size: 1.8rem;
+  font-weight: 900;
+  color: var(--accent);
+}
+
+.story-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6vh;
+  font-size: min(1.75rem, 4vh);
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.story-text.long {
+  font-size: min(1.5rem, 3.4vh);
+}
+
+.story-q {
+  font-size: min(2.6rem, 6vh);
+  font-weight: 900;
+  line-height: 1.3;
+}
+
+.story-q.small {
+  font-size: min(1.7rem, 4vh);
+}
+
+.story-sub {
+  font-size: 1.4rem;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.story-follow {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2vh;
+  font-size: min(2rem, 4.6vh);
+  font-weight: 800;
+}
+
+.story-hint {
+  font-size: 1.3rem;
+  color: var(--accent);
+}
+
+.story-ideas {
+  background: var(--panel);
+  border-radius: 0.8rem;
+  padding: 0.5rem 1.2rem;
+  font-size: 1.1rem;
+}
+
+.story-ideas-note {
+  color: var(--muted);
+  font-weight: 800;
+  margin-bottom: 0.3rem;
+}
+
+.picker {
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.picker-size {
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.picker-size input {
+  font: inherit;
+  width: 4.2em;
+  padding: 0.3em 0.4em;
+  border-radius: 0.5rem;
+  border: 2px solid var(--line);
+  background: var(--bg-2);
+  color: var(--text);
+  text-align: center;
+}
+
+.picker-num {
+  font-size: min(5rem, 12vh);
+  font-weight: 900;
+  color: var(--accent);
+  min-width: 3ch;
+}
+
+.btn.blink {
+  animation: breathe 1.8s ease-in-out infinite;
+}

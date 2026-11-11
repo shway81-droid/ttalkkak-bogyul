@@ -41,6 +41,11 @@ ACT_STEPS.quizboard = async (page) => {
   return 1;
 };
 
+ACT_STEPS.story = async (page, { teams }) => {
+  await click(page, 'award-all');
+  return teams;
+};
+
 /** 세트를 열고 kind 순서의 활동 화면까지 바로 간다 */
 export async function openStep(page, base, { grade, flow = 'lively', teams = 6, kind }) {
   await page.goto(base);
@@ -182,6 +187,38 @@ async function main() {
       await page.locator(act('next-item')).dblclick();
       await page.waitForTimeout(100);
       check('말놀이: [다음 문제] 두 번 눌러도 별이 들어가지 않음', (await totalStars(page)) === t1, `${t1} → ${await totalStars(page)}`);
+      await page.close();
+    }
+
+    // 이야기 나누기 (Task 9)
+    {
+      const page = await ctx.newPage();
+      await openStep(page, base, { grade: 3, flow: 'lively', teams: 6, kind: 'story' });
+      const first = (await page.locator('[data-sentence]').first().innerText()).trim();
+      check('이야기: 처음 화면에 이야기 첫 문장', first.length > 0 && (await page.locator('[data-sentence]').first().isVisible()));
+      for (let i = 0; i < 4; i++) {
+        await click(page, 'stage-next');
+        await page.waitForTimeout(GUARD_WAIT);
+      }
+      check('이야기: [다음 단계] 4번 → 생각 넓히기', (await page.locator('[data-stage]').innerText()).includes('생각 넓히기'));
+      await click(page, 'stage-prev');
+      await page.waitForTimeout(GUARD_WAIT);
+      check('이야기: [이전 단계] → 발표하기', (await page.locator('[data-stage]').innerText()).includes('발표하기'));
+      await page.locator('[data-field="class-size"]').fill('3');
+      await page.waitForTimeout(1300); // 시간이 흐르며 화면이 다시 그려져도
+      check('이야기: 입력한 반 인원이 시간이 지나도 그대로', (await page.locator('[data-field="class-size"]').inputValue()) === '3');
+      const picks = [];
+      for (let i = 0; i < 4; i++) {
+        await click(page, 'pick-number');
+        await page.waitForTimeout(GUARD_WAIT);
+        picks.push(Number(await page.locator('[data-picked]').getAttribute('data-picked')));
+      }
+      const firstThree = new Set(picks.slice(0, 3));
+      check('이야기: 반 인원 3명 → 앞의 3번은 서로 다른 번호', firstThree.size === 3 && picks.every((n) => n >= 1 && n <= 3), picks.join(','));
+      const t0 = await totalStars(page);
+      await page.locator(act('award-all')).dblclick();
+      await page.waitForTimeout(100);
+      check('이야기: [모두 ★] 두 번 눌러도 모둠 수만큼 한 번', (await totalStars(page)) === t0 + 6, `${t0} → ${await totalStars(page)}`);
       await page.close();
     }
 

@@ -5,6 +5,7 @@ import * as celebrate from './celebrate.js';
 import * as word from './word.js';
 import * as gesture from './gesture.js';
 import * as quizboard from './quizboard.js';
+import * as story from './story.js';
 
 export const STEP_ICON = {
   greet: '👋',
@@ -29,7 +30,7 @@ export const ACTIVITIES = {
   word,
   gesture,
   quizboard,
-  story: placeholder,
+  story,
   draw: placeholder,
   celebrate,
 };
