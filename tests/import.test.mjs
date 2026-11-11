@@ -50,3 +50,17 @@ test('filterPeople: 가수·배우·예능인은 모두, 다른 인물은 쉬움
   ];
   assert.deepEqual(filterPeople(items).map((p) => p.id), ['a', 'b', 'c', 'd']);
 });
+
+test('withFullAuthors: 짬짬이 자료에서 잘린 저작자 이름을 전체 이름으로 바꾸고 원본은 그대로 둔다', async () => {
+  const { withFullAuthors, AUTHOR_FULL } = await import('../scripts/import-jjam.mjs');
+  const src = [
+    { id: 'person-002', photo: { author: 'Korea.net / Korean Culture and Information Service (Jeon …', license: 'CC BY-SA 2.0' } },
+    { id: 'person-001', photo: { author: '티비텐 TV10', license: 'CC BY 3.0' } },
+  ];
+  const out = withFullAuthors(src);
+  assert.equal(out[0].photo.author, 'Korea.net / Korean Culture and Information Service (Jeon Han)');
+  assert.equal(out[0].photo.license, 'CC BY-SA 2.0');
+  assert.equal(out[1].photo.author, '티비텐 TV10');
+  assert.equal(src[0].photo.author.endsWith('…'), true);
+  for (const name of Object.values(AUTHOR_FULL)) assert.ok(!/(…|\.\.\.)\s*$/.test(name), name);
+});

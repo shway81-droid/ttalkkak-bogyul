@@ -36,5 +36,5 @@ npm run stamp                     # 화면 파일을 바꾼 뒤 sw.js 파일 목
 ## 출처와 라이선스
 
 - 문항·이야기·인물 자료: **짬짬이**(같은 저작자의 [짬짬이 교실](https://github.com/shway81-droid/jjam-classroom)에서 `npm run import` 로 복사). 인물은 가수·배우·예능인 전체와 역사 인물·과학자·예술가·운동선수 가운데 쉬운 인물만 씁니다.
-- 인물 사진: 위키미디어 공용 등의 자유 라이선스 사진(크기 조정). 사진마다 저작자·라이선스·원본은 [`credits.html`](credits.html)(첫 화면 아래 "인물 사진 출처")에 있습니다. 자료 검증이 비영리(NC)·변경금지(ND) 라이선스를 막습니다.
+- 인물 사진: 위키미디어 공용 등의 자유 라이선스 사진에서 얼굴 부분을 잘라 내고 크기를 줄인 것. 사진마다 저작자·라이선스·원본은 [`credits.html`](credits.html)(첫 화면 아래 "인물 사진 출처")에 있습니다. 자료 검증이 비영리(NC)·변경금지(ND) 라이선스를 막습니다.
 - 글꼴: [Pretendard](https://github.com/orioncactus/pretendard) 서브셋, SIL Open Font License 1.1 — [`assets/fonts/LICENSE.txt`](assets/fonts/LICENSE.txt).

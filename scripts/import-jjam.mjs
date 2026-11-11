@@ -74,6 +74,29 @@ export function filterPeople(items) {
   return items.filter((w) => w.type === 'person' && (PERSON_TOPICS_ALL_LEVELS.includes(w.topic) || w.level === 'easy'));
 }
 
+/**
+ * 짬짬이 자료에서 "…"로 잘린 사진 저작자 이름의 전체 이름(id → 이름).
+ * 위키미디어 공용 파일 정보(Artist)에서 확인했다(2026-11-11). 확인 글(Verification: …)은 이름이 아니라 뺐다.
+ * 자료 검증이 잘린 이름을 막으므로, 새로 잘린 이름이 들어오면 여기에 더한다.
+ */
+export const AUTHOR_FULL = {
+  'person-002': 'Korea.net / Korean Culture and Information Service (Jeon Han)',
+  'person-068': 'KOCIS (Korean Culture and Information Service) Official Photographer: Kim Sunjoo',
+  'person-110': 'Louis Bachrach, Bachrach Studios, restored by Michel Vuijlsteke',
+  'person-122': 'MetalGearLiquid, based on File:Steve_Jobs_Headshot_2010-CROP.jpg made by Matt Yohe',
+  'person-193': 'Official YouTube account of 식신로드 (Gourmet Road)',
+  'person-267': 'Korea.net / Korean Culture and Information Service (Jeon Han)',
+  'person-323': 'lotteent (official Lotte Entertainment YouTube account)',
+  'person-348': 'Korea.net / Korean Culture and Information Service (Jeon Han)',
+  'person-359': 'lotteent (official Lotte Entertainment YouTube account)',
+  'person-373': 'Official YouTube account of 식신로드 (Gourmet Road)',
+};
+
+/** 잘린 저작자 이름을 전체 이름으로 바꾼 새 배열(원본은 그대로) */
+export function withFullAuthors(people) {
+  return people.map((p) => (AUTHOR_FULL[p.id] ? { ...p, photo: { ...p.photo, author: AUTHOR_FULL[p.id] } } : p));
+}
+
 function git(...args) {
   return execFileSync('git', args, { encoding: 'utf8' }).trim();
 }
@@ -109,7 +132,7 @@ function main() {
   writeJson('words.json', { source, items: words });
 
   // 인물 퀴즈: 사진은 원본과 같은 경로(assets/people/…)로 복사한다. 빠진 인물의 옛 사진이 남지 않게 폴더를 새로 만든다.
-  const people = filterPeople(wordItems);
+  const people = withFullAuthors(filterPeople(wordItems));
   const photoDir = join(ROOT, 'assets', 'people');
   rmSync(photoDir, { recursive: true, force: true });
   mkdirSync(photoDir, { recursive: true });

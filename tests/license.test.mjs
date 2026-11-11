@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { licenseUrl, isFreeLicense } from '../js/core/license.js';
 import { validateData, readDataDir } from '../scripts/validate-data.mjs';
+import { readFileSync } from 'node:fs';
 
 test('licenseUrl: CC 라이선스는 해당 판의 주소, 퍼블릭 도메인은 없음', () => {
   assert.equal(licenseUrl('CC BY 3.0'), 'https://creativecommons.org/licenses/by/3.0/');
@@ -22,4 +23,10 @@ test('validateData: 쓸 수 없는 라이선스의 사진은 그 인물 id 가 �
   data.people[5].photo.license = 'CC BY-NC 4.0';
   const errs = validateData(data);
   assert.ok(errs.some((e) => e.includes(data.people[5].id) && e.includes('라이선스')), errs.join('\n'));
+});
+
+test('출처 페이지는 사진을 잘라 내고 줄였다고 밝힌다(CC BY 4.0·BY-SA 4.0 은 바꾼 점을 밝혀야 함)', () => {
+  const html = readFileSync(new URL('../credits.html', import.meta.url), 'utf8');
+  assert.ok(html.includes('잘라'), '잘라 낸 것을 밝혀야 합니다');
+  assert.ok(!html.includes('크기만'), '"크기만 줄였다"는 사실과 다릅니다');
 });

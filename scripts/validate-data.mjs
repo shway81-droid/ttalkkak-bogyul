@@ -71,6 +71,8 @@ export function validateData(data, exists = (p) => existsSync(join(ROOT, p))) {
     for (const key of ['author', 'license', 'source']) {
       if (!String(photo[key] || '').trim()) errs.push(`인물 ${p.id}: 사진 ${key} 가 비어 있습니다`);
     }
+    // 잘린 이름("…")은 저작자를 다 밝히지 못한다 — scripts/import-jjam.mjs 의 AUTHOR_FULL 에 전체 이름을 더한다
+    if (/(…|\.\.\.)\s*$/.test(photo.author || '')) errs.push(`인물 ${p.id}: 사진 저작자 이름이 잘려 있습니다 (${photo.author})`);
     if (photo.license && !isFreeLicense(photo.license)) errs.push(`인물 ${p.id}: 쓸 수 없는 라이선스입니다 (${photo.license})`);
     if (!p.hint || !p.answer) errs.push(`인물 ${p.id}: 힌트나 정답이 없습니다`);
   }

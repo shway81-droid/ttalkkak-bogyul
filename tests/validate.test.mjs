@@ -59,3 +59,12 @@ test('인물 사진의 저작자·라이선스·원본 주소가 비면 오류',
     assert.ok(errs.some((e) => e.includes(data.people[3].id) && e.includes(key)), `${key}: ${errs.join('\n')}`);
   }
 });
+
+test('사진 저작자 이름이 잘려 있으면(… 나 ... 로 끝나면) 그 인물 id 가 든 오류', () => {
+  for (const cut of ['Korea.net / Korean Culture (Jeon …', 'Somebody Ph…', 'Long name ...']) {
+    const data = fresh();
+    data.people[7].photo.author = cut;
+    const errs = validateData(data);
+    assert.ok(errs.some((e) => e.includes(data.people[7].id) && e.includes('저작자')), `${cut}: ${errs.join('\n')}`);
+  }
+});
