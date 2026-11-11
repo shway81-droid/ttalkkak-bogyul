@@ -46,6 +46,13 @@ ACT_STEPS.story = async (page, { teams }) => {
   return teams;
 };
 
+ACT_STEPS.draw = async (page, { teams }) => {
+  await click(page, 'draw-start');
+  await page.waitForTimeout(GUARD_WAIT);
+  await click(page, 'award-all');
+  return teams;
+};
+
 /** 세트를 열고 kind 순서의 활동 화면까지 바로 간다 */
 export async function openStep(page, base, { grade, flow = 'lively', teams = 6, kind }) {
   await page.goto(base);
@@ -219,6 +226,42 @@ async function main() {
       await page.locator(act('award-all')).dblclick();
       await page.waitForTimeout(100);
       check('이야기: [모두 ★] 두 번 눌러도 모둠 수만큼 한 번', (await totalStars(page)) === t0 + 6, `${t0} → ${await totalStars(page)}`);
+      await page.close();
+    }
+
+    // 따라 그리기와 꾸미기 (Task 10) — 가짜 시계로 시간을 건너뛴다
+    {
+      const page = await ctx.newPage();
+      await page.clock.install();
+      await openStep(page, base, { grade: 3, flow: 'calm', teams: 6, kind: 'draw' });
+      check('그리기: 준비 화면에 준비 안내', (await page.locator('[data-setup]').innerText()).trim().length > 0);
+      await click(page, 'draw-start');
+      await page.waitForTimeout(GUARD_WAIT);
+      const total = Number(await page.locator('[data-draw-step]').getAttribute('data-total-steps'));
+      const k0 = await page.locator('[data-draw-step]').getAttribute('data-draw-step');
+      await click(page, 'pause');
+      await page.clock.fastForward(30000);
+      const k1 = await page.locator('[data-draw-step]').getAttribute('data-draw-step');
+      check('그리기: ⏸ 동안 30초가 지나도 단계 그대로', k0 === k1 && k0 === '1', `${k0} → ${k1}`);
+      await click(page, 'pause');
+      await page.clock.fastForward(40000);
+      const k2 = Number(await page.locator('[data-draw-step]').getAttribute('data-draw-step'));
+      check('그리기: ▶ 뒤 시간이 지나면 다음 단계로 저절로', k2 > 1, String(k2));
+      for (let i = k2; i <= total; i++) {
+        await click(page, 'draw-next');
+        await page.waitForTimeout(GUARD_WAIT);
+      }
+      check('그리기: [다음]을 끝까지 → 색칠 화면', await page.locator('[data-coloring]').isVisible());
+      const coloring = Number(await page.locator('[data-coloring]').getAttribute('data-coloring'));
+      await page.clock.fastForward(coloring * 1000 + 1000);
+      const deco = page.locator('[data-decorate]');
+      const text = (await deco.innerText()).trim();
+      check('그리기: 색칠이 끝나면 꾸미기 문구, {title} 없음', (await deco.isVisible()) && text.length > 0 && !text.includes('{title}'), text);
+      await page.waitForTimeout(GUARD_WAIT);
+      const t0 = await totalStars(page);
+      await page.locator(act('award-all')).dblclick();
+      await page.waitForTimeout(100);
+      check('그리기: [모두 ★] 두 번 눌러도 한 번', (await totalStars(page)) === t0 + 6);
       await page.close();
     }
 

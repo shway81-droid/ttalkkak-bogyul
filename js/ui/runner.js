@@ -112,7 +112,7 @@ export function runSession(root, { plan, teamCount, sfx, onExit }) {
       // 모둠 칩 자체가 [+] 버튼이다(좁은 화면에서도 모둠 이름이 잘리지 않게). [−]만 따로 둔다.
       return h('div', { class: `team${isTurn ? ' turn' : ''}`, 'data-team': String(t) },
         h('button', { class: 'team-add', type: 'button', 'data-act': `star-add-${t}`, title: `${t + 1}모둠 별 더하기`, 'aria-label': `${t + 1}모둠 별 더하기 (지금 ${n}개)`, onClick: () => { S.addStar(state, t); starsChanged(); } },
-          h('span', { class: 'team-name' }, `${isTurn ? '▶' : ''}${t + 1}모둠`),
+          h('span', { class: 'team-name' }, `${t + 1}모둠`),
           h('span', { class: 'team-stars' }, `★${n}`),
           h('span', { class: 'team-plus', 'aria-hidden': 'true' }, '+'),
         ),
