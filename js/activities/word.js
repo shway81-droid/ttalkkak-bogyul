@@ -22,6 +22,8 @@ export function mount(el, ctx) {
   let flashMs = 0;
   let hintShown = false;
   let mode = 'ask'; // ask | flash | revealed
+  // 의논 시계는 이 칸만 고친다. 화면 전체를 1초마다 다시 그리면 누르는 사이 버튼이 바뀌어 클릭이 사라진다.
+  let discussSpan = null;
 
   function newItem() {
     item = deck.next();
@@ -78,6 +80,15 @@ export function mount(el, ctx) {
     newItem();
   });
 
+  const discussText = (sec) => (sec > 0 ? `의논 ${sec}초` : '답해요!');
+
+  function updateDiscuss() {
+    if (!discussSpan) return;
+    const sec = Math.max(0, Math.ceil(discussMs / 1000));
+    discussSpan.setAttribute('data-discuss', String(sec));
+    discussSpan.textContent = discussText(sec);
+  }
+
   function answerBlock() {
     const also = item.also && item.also.length ? h('p', { class: 'word-also' }, `다른 정답: ${item.also.join(', ')}`) : null;
     return h('div', { class: 'word-answer', 'data-answer': '' },
@@ -92,12 +103,12 @@ export function mount(el, ctx) {
     const turn = ctx.api.currentTurn();
     const sec = Math.max(0, Math.ceil(discussMs / 1000));
     let who;
+    discussSpan = null;
     if (mode === 'flash') who = h('div', { class: 'who who-ok', 'data-turn': String(turn) }, '⭕ 맞혔어요! ★ +1');
     else if (mode === 'revealed') who = h('div', { class: 'who', 'data-turn': String(turn) }, '정답을 함께 확인해요');
     else {
-      who = h('div', { class: 'who', 'data-turn': String(turn) },
-        `${turn + 1}모둠 차례 · `,
-        h('span', { 'data-discuss': String(sec) }, sec > 0 ? `의논 ${sec}초` : '답해요!'));
+      discussSpan = h('span', { 'data-discuss': String(sec) }, discussText(sec));
+      who = h('div', { class: 'who', 'data-turn': String(turn) }, `${turn + 1}모둠 차례 · `, discussSpan);
     }
 
     let buttons;
@@ -134,7 +145,7 @@ export function mount(el, ctx) {
       if (mode === 'ask' && discussMs > 0) {
         const before = Math.ceil(discussMs / 1000);
         discussMs = Math.max(0, discussMs - dt);
-        if (Math.ceil(discussMs / 1000) !== before) render();
+        if (Math.ceil(discussMs / 1000) !== before) updateDiscuss();
       } else if (mode === 'flash') {
         flashMs -= dt;
         if (flashMs <= 0) newItem();

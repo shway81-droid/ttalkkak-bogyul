@@ -9,6 +9,8 @@ import { ACTIVITIES, STEP_ICON } from '../activities/index.js';
 const TICK_MS = 200;
 // 차례가 있는 놀이에서만 별판의 차례 모둠을 강조한다.
 const TURN_KINDS = new Set(['word', 'gesture']);
+// 축하 순서에서는 모둠별 별을 나란히 보여 주지 않는다(우리 반 합계만 — 모둠끼리 비교하지 않게).
+const CLASS_ONLY_KINDS = new Set(['celebrate']);
 
 export function runSession(root, { plan, teamCount, sfx, onExit }) {
   const state = S.createSession(plan, teamCount);
@@ -20,6 +22,9 @@ export function runSession(root, { plan, teamCount, sfx, onExit }) {
 
   // [다음 순서] 버튼과 → 키가 같은 막기를 쓴다(빠른 두 번 누름 → 한 칸만).
   const guardedNext = guard(nextStep);
+  // 별판 [+]·[−]도 모둠마다 막는다. 칩은 누를 때마다 새로 그려지므로 막기는 칩 밖에 둔다.
+  const addStar = Array.from({ length: teamCount }, (_, t) => guard(() => { S.addStar(state, t); starsChanged(); }));
+  const removeStar = Array.from({ length: teamCount }, (_, t) => guard(() => { S.removeStar(state, t); starsChanged(); }));
 
   // ---- 위쪽 띠 --------------------------------------------------------------
   const pills = plan.steps.map((step, i) =>
@@ -107,16 +112,18 @@ export function runSession(root, { plan, teamCount, sfx, onExit }) {
   function renderBoard() {
     const step = plan.steps[state.stepIndex];
     const showTurn = TURN_KINDS.has(step.kind);
-    fill(teamsEl, state.stars.map((n, t) => {
+    if (CLASS_ONLY_KINDS.has(step.kind)) {
+      fill(teamsEl, h('p', { class: 'board-note' }, '모둠 별을 모두 모아 우리 반 별이 되었어요'));
+    } else fill(teamsEl, state.stars.map((n, t) => {
       const isTurn = showTurn && t === state.turn;
       // 모둠 칩 자체가 [+] 버튼이다(좁은 화면에서도 모둠 이름이 잘리지 않게). [−]만 따로 둔다.
       return h('div', { class: `team${isTurn ? ' turn' : ''}`, 'data-team': String(t) },
-        h('button', { class: 'team-add', type: 'button', 'data-act': `star-add-${t}`, title: `${t + 1}모둠 별 더하기`, 'aria-label': `${t + 1}모둠 별 더하기 (지금 ${n}개)`, onClick: () => { S.addStar(state, t); starsChanged(); } },
+        h('button', { class: 'team-add', type: 'button', 'data-act': `star-add-${t}`, title: `${t + 1}모둠 별 더하기`, 'aria-label': `${t + 1}모둠 별 더하기 (지금 ${n}개)`, onClick: addStar[t] },
           h('span', { class: 'team-name' }, `${t + 1}모둠`),
           h('span', { class: 'team-stars' }, `★${n}`),
           h('span', { class: 'team-plus', 'aria-hidden': 'true' }, '+'),
         ),
-        h('button', { class: 'mini', type: 'button', 'data-act': `star-remove-${t}`, title: `${t + 1}모둠 별 빼기`, 'aria-label': `${t + 1}모둠 별 빼기`, onClick: () => { S.removeStar(state, t); starsChanged(); } }, '−'),
+        h('button', { class: 'mini', type: 'button', 'data-act': `star-remove-${t}`, title: `${t + 1}모둠 별 빼기`, 'aria-label': `${t + 1}모둠 별 빼기`, onClick: removeStar[t] }, '−'),
       );
     }));
     const total = S.totalStars(state);
@@ -251,6 +258,13 @@ export function runSession(root, { plan, teamCount, sfx, onExit }) {
   }
   document.addEventListener('keydown', onKey);
 
+  // 수업 중 새로고침·뒤로 가기는 별과 진행을 모두 잃으므로 브라우저가 한 번 묻게 한다(아무것도 저장하지 않음).
+  function onBeforeUnload(e) {
+    e.preventDefault();
+    e.returnValue = '';
+  }
+  window.addEventListener('beforeunload', onBeforeUnload);
+
   const interval = setInterval(() => {
     const now = performance.now();
     const dt = now - last;
@@ -266,6 +280,7 @@ export function runSession(root, { plan, teamCount, sfx, onExit }) {
     finished = true;
     clearInterval(interval);
     document.removeEventListener('keydown', onKey);
+    window.removeEventListener('beforeunload', onBeforeUnload);
     destroyActivity();
     onExit();
   }

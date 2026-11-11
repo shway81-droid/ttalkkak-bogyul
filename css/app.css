@@ -375,6 +375,16 @@
   padding: 0;
 }
 
+/* 축하 순서: 모둠 칩 대신 한 줄 */
+.board-note {
+  margin: 0;
+  flex: 1;
+  text-align: center;
+  font-weight: 800;
+  font-size: 1rem;
+  color: var(--muted);
+}
+
 .board-tools {
   display: flex;
   align-items: center;

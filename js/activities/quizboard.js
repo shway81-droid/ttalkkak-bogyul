@@ -14,6 +14,8 @@ export function mount(el, ctx) {
   let discussMs = 0;
   let mode = 'ask'; // ask | revealed
   let on = [];
+  // 의논 시계는 이 칸만 고친다. 화면 전체를 1초마다 다시 그리면 누르는 사이 버튼이 바뀌어 클릭이 사라진다.
+  let discussSpan = null;
   // [정답 보기]를 두 번 누르면 두 번째 누름이 그 자리에 새로 나온 모둠 버튼을 켤 수 있다. ctx.gate 로 막는다.
   const settled = () => ctx.gate.ready();
 
@@ -40,6 +42,9 @@ export function mount(el, ctx) {
     render();
   }
 
+  // 두 번 누르면 켜졌다 바로 꺼지므로(맞힌 모둠이 별을 못 받음) 모둠마다 막는다
+  const toggles = Array.from({ length: ctx.teamCount }, (_, t) => ctx.guard(() => toggle(t)));
+
   function allCorrect() {
     if (mode !== 'revealed' || !settled()) return;
     on = on.map(() => true);
@@ -56,12 +61,21 @@ export function mount(el, ctx) {
     newItem();
   });
 
+  const discussText = (sec) => (sec > 0 ? `모든 모둠 의논 ${sec}초` : '✋ 손가락을 들어요!');
+
+  function updateDiscuss() {
+    if (!discussSpan) return;
+    const sec = Math.max(0, Math.ceil(discussMs / 1000));
+    discussSpan.setAttribute('data-discuss', String(sec));
+    discussSpan.textContent = discussText(sec);
+  }
+
   function render() {
     const sec = Math.max(0, Math.ceil(discussMs / 1000));
+    discussSpan = mode === 'revealed' ? null : h('span', { 'data-discuss': String(sec) }, discussText(sec));
     const banner = mode === 'revealed'
       ? h('div', { class: 'who who-ok' }, '정답을 확인해요')
-      : h('div', { class: 'who' },
-        h('span', { 'data-discuss': String(sec) }, sec > 0 ? `모든 모둠 의논 ${sec}초` : '✋ 손가락을 들어요!'));
+      : h('div', { class: 'who' }, discussSpan);
 
     const opts = options.map((o, i) => {
       const correct = o === item.a;
@@ -77,7 +91,7 @@ export function mount(el, ctx) {
         h('div', { class: 'quiz-teams', role: 'group', 'aria-label': '맞힌 모둠 고르기' },
           h('span', { class: 'quiz-teams-label' }, '맞힌 모둠:'),
           on.map((v, t) => h('button', {
-            class: 'team-toggle', type: 'button', 'data-act': `team-toggle-${t}`, 'aria-pressed': String(v), onClick: () => toggle(t),
+            class: 'team-toggle', type: 'button', 'data-act': `team-toggle-${t}`, 'aria-pressed': String(v), onClick: toggles[t],
           }, `${t + 1}모둠`)),
         ),
         h('button', { class: 'btn btn-big', type: 'button', 'data-act': 'all-correct', onClick: allCorrect }, '모두 맞혔어요'),
@@ -103,7 +117,7 @@ export function mount(el, ctx) {
       if (mode !== 'ask' || discussMs <= 0) return;
       const before = Math.ceil(discussMs / 1000);
       discussMs = Math.max(0, discussMs - dt);
-      if (Math.ceil(discussMs / 1000) !== before) render();
+      if (Math.ceil(discussMs / 1000) !== before) updateDiscuss();
     },
     destroy() {},
   };

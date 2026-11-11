@@ -11,6 +11,19 @@ const PRINT_MARGIN = { top: '12mm', right: '12mm', bottom: '12mm', left: '12mm' 
 
 const act = (name) => `[data-act="${name}"]`;
 
+const leaveOk = new WeakSet();
+/**
+ * 페이지를 연다. 수업 중인 페이지에서 옮기면 브라우저가 '사이트에서 나가시겠습니까?'를 묻는데(의도된 동작),
+ * 검사에서는 '나가기'를 고른다. (떠나기 확인 자체는 LIVE_CHECKS.leaveGuard 가 따로 본다)
+ */
+export async function open(page, url) {
+  if (!leaveOk.has(page)) {
+    leaveOk.add(page);
+    page.on('dialog', (d) => (d.type() === 'beforeunload' ? d.accept() : d.dismiss()).catch(() => {}));
+  }
+  await page.goto(url);
+}
+
 export async function click(page, name) {
   await page.locator(act(name)).first().click();
 }
@@ -59,7 +72,7 @@ ACT_STEPS.draw = async (page, { teams }) => {
 
 /** 세트를 열고 kind 순서의 활동 화면까지 바로 간다 */
 export async function openStep(page, base, { grade, flow = 'lively', teams = 6, kind }) {
-  await page.goto(base);
+  await open(page, base);
   await click(page, `grade-${grade}`);
   await click(page, `flow-${flow}`);
   await click(page, `teams-${teams}`);
@@ -81,7 +94,7 @@ export async function runSet(page, { grade, flow, teams }, base) {
   const errors = [];
   page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
   page.on('pageerror', (e) => errors.push(String(e)));
-  await page.goto(base);
+  await open(page, base);
   await click(page, `grade-${grade}`);
   await click(page, `flow-${flow}`);
   await click(page, `teams-${teams}`);
@@ -174,13 +187,19 @@ const SWEEP = {
 /** 세트의 모든 순서를 돌며 규칙 화면·활동 화면·활동 안의 붐비는 화면이 넘치는지 본다(page.clock.install 뒤에 부른다) */
 export async function sweepScreens(page, base, { grade, flow, teams }) {
   const over = [];
-  await page.goto(base);
+  await open(page, base);
   await click(page, `grade-${grade}`);
   await click(page, `flow-${flow}`);
   await click(page, `teams-${teams}`);
   await click(page, 'start');
   // 별판: 모둠마다 별을 12개씩(두 자리 수) 준 뒤 칩이 한 줄이고 칩 안 글자가 잘리지 않는지
-  for (let t = 0; t < teams; t++) for (let k = 0; k < 12; k++) await click(page, `star-add-${t}`);
+  // (같은 모둠 칩은 400ms 안에 다시 누르면 무시되므로 모둠을 돌아가며 누른다)
+  for (let k = 0; k < 12; k++) {
+    for (let t = 0; t < teams; t++) await click(page, `star-add-${t}`);
+    await page.waitForTimeout(GUARD_WAIT);
+  }
+  const chipStars = await page.locator('[data-total]').getAttribute('data-total');
+  if (Number(chipStars) !== teams * 12) over.push(`별판 별 ${chipStars}개(기대 ${teams * 12})`);
   const chipRows = new Set(await page.locator('.team').evaluateAll((els) => els.map((e) => e.offsetTop))).size;
   const chipsClipped = await page.locator('.team-add').evaluateAll((els) => els.filter((e) => e.scrollWidth > e.clientWidth + 1).length);
   const count = await page.locator('[data-act^="goto-"]').count();
@@ -204,6 +223,105 @@ export async function sweepScreens(page, base, { grade, flow, teams }) {
   return { over, chipRows, chipsClipped };
 }
 
+/** 누르고 있는 동안(1.1초) 화면의 1초 카운트다운이 바뀌는 느린 클릭 */
+async function slowClick(page, name, holdMs = 1100) {
+  const box = await page.locator(act(name)).first().boundingBox();
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.waitForTimeout(holdMs);
+  await page.mouse.up();
+}
+
+/** 수업 중 조작 검사(최종 검토에서 나온 것). 각각 (ctx, base, check) 를 받는다. */
+export const LIVE_CHECKS = {
+  // 카운트다운이 화면 전체를 다시 그리면 누르는 사이 버튼이 바뀌어 클릭이 사라진다
+  async slowClicks(ctx, base, check) {
+    const page = await ctx.newPage();
+    await openStep(page, base, { grade: 2, flow: 'lively', teams: 6, kind: 'word' });
+    let t0 = await totalStars(page);
+    await slowClick(page, 'correct');
+    check('말놀이: 의논 시간이 줄어드는 동안 천천히 누른 [맞혔어요]도 들어감', (await totalStars(page)) === t0 + 1, `${t0} → ${await totalStars(page)}`);
+    await openStep(page, base, { grade: 1, flow: 'lively', teams: 6, kind: 'gesture' });
+    await click(page, 'show-word');
+    await page.waitForTimeout(GUARD_WAIT);
+    t0 = await totalStars(page);
+    await slowClick(page, 'correct');
+    check('몸으로 말해요: 남은 시간이 줄어드는 동안 천천히 누른 [맞혔어요]도 들어감', (await totalStars(page)) === t0 + 1, `${t0} → ${await totalStars(page)}`);
+    await openStep(page, base, { grade: 1, flow: 'calm', teams: 6, kind: 'quizboard' });
+    await slowClick(page, 'reveal');
+    check('상식 퀴즈: 의논 시간이 줄어드는 동안 천천히 누른 [정답 보기]도 들어감', await page.locator(act('team-toggle-0')).isVisible());
+    await page.close();
+  },
+
+  // 축하 순서에서는 모둠별 별을 나란히 보여 주지 않는다(우리 반 합계만)
+  async celebrateNoTeams(ctx, base, check) {
+    const page = await ctx.newPage();
+    await open(page, base);
+    await click(page, 'grade-3');
+    await click(page, 'start');
+    const last = (await page.locator('[data-act^="goto-"]').count()) - 1;
+    await click(page, `goto-${last}`);
+    const rulesTeams = await page.locator('.team').count();
+    await click(page, 'start-step');
+    await page.locator('[data-kind="celebrate"]').waitFor();
+    const actTeams = await page.locator('.team').count();
+    check('축하: 규칙·활동 화면 모두 모둠별 별 칩 없이 우리 반 합계만', rulesTeams === 0 && actTeams === 0 && (await page.locator('[data-total]').isVisible()), `규칙 ${rulesTeams}, 활동 ${actTeams}`);
+    await click(page, 'goto-1');
+    check('축하에서 앞 순서로 가면 모둠 칩이 다시 보임', (await page.locator('.team').count()) === 6);
+    await page.close();
+  },
+
+  // 별을 바꾸는 버튼은 두 번 눌러도 한 번만
+  async doubleClicks(ctx, base, check) {
+    const page = await ctx.newPage();
+    await open(page, base);
+    await click(page, 'grade-3');
+    await click(page, 'start');
+    await page.locator(act('star-add-2')).dblclick();
+    await page.waitForTimeout(100);
+    check('별판: 모둠 칩을 두 번 눌러도 별 +1', (await totalStars(page)) === 1, String(await totalStars(page)));
+    await page.waitForTimeout(GUARD_WAIT);
+    await click(page, 'star-add-2');
+    await page.waitForTimeout(GUARD_WAIT);
+    const t1 = await totalStars(page);
+    await page.locator(act('star-remove-2')).dblclick();
+    await page.waitForTimeout(100);
+    check('별판: [−]를 두 번 눌러도 별 −1', (await totalStars(page)) === t1 - 1, `${t1} → ${await totalStars(page)}`);
+    await openStep(page, base, { grade: 1, flow: 'calm', teams: 6, kind: 'quizboard' });
+    await click(page, 'reveal');
+    await page.waitForTimeout(GUARD_WAIT);
+    await page.locator(act('team-toggle-1')).dblclick();
+    await page.waitForTimeout(100);
+    check('상식 퀴즈: 모둠 버튼을 두 번 눌러도 켜진 채', (await page.locator(act('team-toggle-1')).getAttribute('aria-pressed')) === 'true');
+    await page.close();
+  },
+
+  // 수업 중에 새로고침·뒤로 가기를 누르면 한 번 묻는다(별과 진행이 사라지므로). 첫 화면에서는 묻지 않는다.
+  async leaveGuard(ctx, base, check) {
+    const page = await ctx.newPage();
+    const dialogs = [];
+    page.on('dialog', async (d) => {
+      dialogs.push(d.type());
+      await d.dismiss();
+    });
+    await page.goto(base);
+    await click(page, 'grade-3');
+    await click(page, 'start');
+    await page.close({ runBeforeUnload: true });
+    await new Promise((r) => setTimeout(r, 500));
+    check('수업 중 페이지를 떠나려 하면 묻고, 머무르면 그대로', dialogs.includes('beforeunload') && !page.isClosed(), `물음 [${dialogs.join(',')}], 닫힘 ${page.isClosed()}`);
+    if (page.isClosed()) return;
+    await click(page, 'exit');
+    await click(page, 'exit-confirm');
+    await page.locator(act('grade-1')).waitFor();
+    const before = dialogs.length;
+    const closed = new Promise((r) => page.once('close', () => r(true)));
+    await page.close({ runBeforeUnload: true });
+    const ok = await Promise.race([closed, new Promise((r) => setTimeout(() => r(false), 3000))]);
+    check('수업을 끝낸 뒤 첫 화면에서는 묻지 않음', ok && dialogs.length === before, `닫힘 ${ok}, 물음 ${dialogs.length - before}`);
+  },
+};
+
 // ---------------------------------------------------------------------------
 
 const results = [];
@@ -222,7 +340,7 @@ async function main() {
     // 첫 화면: 학년 고르기 전에는 [시작] 꺼짐
     {
       const page = await ctx.newPage();
-      await page.goto(base);
+      await open(page, base);
       check('학년 고르기 전 [시작] 꺼짐', await page.locator(act('start')).isDisabled());
       await click(page, 'grade-2');
       check('학년 고르면 [시작] 켜짐', await page.locator(act('start')).isEnabled());
@@ -243,7 +361,7 @@ async function main() {
     // 규칙 안내 본문 글자: 1920×1080 에서 32px 이상(교실 뒷자리)
     {
       const page = await ctx.newPage();
-      await page.goto(base);
+      await open(page, base);
       await click(page, 'grade-6');
       await click(page, 'start');
       const px = await page.locator('.rules-lines li').first().evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
@@ -268,10 +386,13 @@ async function main() {
       }
     }
 
+    // 수업 중 조작(최종 검토): 느린 클릭, 축하 화면, 두 번 누름, 페이지 떠나기
+    for (const run of Object.values(LIVE_CHECKS)) await run(ctx, base, check);
+
     // 순서 알약·일시정지
     {
       const page = await ctx.newPage();
-      await page.goto(base);
+      await open(page, base);
       await click(page, 'grade-3');
       await click(page, 'start');
       const title = (await page.locator(act('goto-3')).innerText()).replace(/^\S+\s*/, '').trim();
@@ -403,7 +524,7 @@ async function main() {
     // [▶ 시작] 두 번 누름이 활동 버튼에 닿지 않음
     {
       const page = await ctx.newPage();
-      await page.goto(base);
+      await open(page, base);
       await click(page, 'grade-3');
       await click(page, 'start');
       await page.locator('[data-step-kind="word"]').click();
@@ -469,7 +590,7 @@ async function main() {
       page.on('pageerror', (e) => errors.push(String(e)));
       page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
       for (const s of SETS) {
-        await page.goto(`${base}print.html?grade=${s.grade}&flow=${s.flow}`);
+        await open(page, `${base}print.html?grade=${s.grade}&flow=${s.flow}`);
         await page.locator('body[data-ready]').waitFor();
         const pdf = await page.pdf({ format: 'A4', printBackground: true, margin: PRINT_MARGIN });
         const pages = (pdf.toString('latin1').match(/\/Type\s*\/Page[^s]/g) || []).length;
@@ -488,20 +609,22 @@ async function main() {
       const octx = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
       try {
         const first = await octx.newPage();
-        await first.goto(base);
+        await open(first, base);
         await first.evaluate(() => navigator.serviceWorker.ready.then(() => true));
         await first.close();
         await octx.setOffline(true);
         const page = await octx.newPage();
-        await page.goto(base);
-        check('오프라인: 첫 화면이 뜸', await page.locator(act('grade-1')).isVisible());
+        await open(page, base);
+        // 첫 화면은 자료(data/*.json)를 읽은 뒤에 그려지므로 뜰 때까지 기다린다
+        const shown = await page.locator(act('grade-1')).waitFor({ timeout: 5000 }).then(() => true, () => false);
+        check('오프라인: 첫 화면이 뜸', shown);
         await click(page, 'grade-1');
         await click(page, 'flow-lively');
         await click(page, 'start');
         await click(page, 'start-step');
         const firstKind = await page.locator('[data-kind]').first().getAttribute('data-kind');
         check('오프라인: g1-lively 첫 순서가 뜸', firstKind === 'greet', String(firstKind));
-        await page.goto(`${base}print.html?grade=1&flow=lively`);
+        await open(page, `${base}print.html?grade=1&flow=lively`);
         await page.locator('body[data-ready]').waitFor();
         check('오프라인: 진행 대본도 열림', (await page.locator('body').innerText()).includes('바를 정 자'));
       } finally {

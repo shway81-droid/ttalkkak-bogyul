@@ -27,9 +27,11 @@ npm run serve                     # http://localhost:4173
 npm test                          # 단위 검사 + 자료 검증 + 글꼴 글자 검사
 npm run e2e                       # 브라우저 검사(12세트, 작은 화면, 진행 대본, 오프라인)
 npm run import                    # 짬짬이 자료 다시 가져오기(data/*.json)
+npm run stamp                     # 화면 파일을 바꾼 뒤 sw.js 캐시 이름 새로 찍기
 ```
 
-- 화면 파일을 더하거나 빼면 `sw.js` 의 `ASSETS` 도 고칩니다(`tests/sw.test.mjs` 가 맞춰 봅니다).
+- 화면 파일(`js/`·`css/`·`data/`·`assets/`·html 등)을 **바꾼 뒤에는 `npm run stamp`** 로 `sw.js` 의 캐시 이름을 새로 찍습니다. 그래야 배포 뒤 브라우저가 옛 파일 대신 새 파일을 한꺼번에 받습니다(`npm test` 가 잊으면 알려 줍니다).
+- 파일을 더하거나 빼면 `sw.js` 의 `ASSETS` 도 고칩니다(`tests/sw.test.mjs` 가 맞춰 봅니다).
 - 자료를 바꾸면 `node scripts/validate-data.mjs` 로 세트마다 후보가 충분한지 확인합니다.
 
 ## 출처와 라이선스

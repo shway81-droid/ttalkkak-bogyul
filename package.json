@@ -6,7 +6,8 @@
     "test": "node --test \"tests/*.test.mjs\" && node scripts/validate-data.mjs && node scripts/check-font-coverage.mjs",
     "import": "node scripts/import-jjam.mjs",
     "e2e": "node scripts/e2e.mjs",
-    "serve": "node scripts/serve.mjs"
+    "serve": "node scripts/serve.mjs",
+    "stamp": "node scripts/sw-version.mjs"
   },
   "devDependencies": {
     "playwright": "^1.61.1"

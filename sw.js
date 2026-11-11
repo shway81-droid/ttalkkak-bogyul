@@ -1,7 +1,9 @@
 // 서비스 워커: 한 번 열면 인터넷이 끊겨도 쓸 수 있게 화면에 필요한 파일을 모두 담아 둔다.
 // 요청은 담아 둔 것으로 먼저 답하고, 뒤에서 새로 받아 갈아 끼운다(stale-while-revalidate).
 // 파일을 더하거나 빼면 ASSETS 도 고친다 — tests/sw.test.mjs 가 실제 파일과 맞춰 본다.
-// 자료 모양이 바뀌는 큰 변경을 올릴 때는 CACHE 이름의 숫자를 올린다(옛 파일과 섞이지 않게).
+// CACHE 이름 끝은 ASSETS 파일 내용의 해시다. 파일을 하나라도 바꾸면 `npm run stamp` 로 새로 찍는다
+// (검사가 알려 준다). 그러면 배포 뒤 이 파일이 바뀌어 브라우저가 서비스 워커를 새로 설치하고,
+// 모든 파일을 한꺼번에 새로 받아 옛 파일과 새 파일이 섞이지 않는다.
 const ASSETS = [
   './index.html',
   './print.html',
@@ -46,13 +48,14 @@ const ASSETS = [
   './js/ui/start.js',
 ];
 
-const CACHE = 'ttalkkak-bogyul-v1';
+const CACHE = 'ttalkkak-bogyul-4bce02504af2';
 const PREFIX = 'ttalkkak-bogyul-';
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE)
-      .then((cache) => cache.addAll(ASSETS))
+      // 브라우저 HTTP 캐시(GitHub Pages 는 10분)를 거치지 않고 서버에서 새로 받는다
+      .then((cache) => cache.addAll(ASSETS.map((u) => new Request(new URL(u, self.location), { cache: 'reload' }))))
       .then(() => self.skipWaiting()),
   );
 });

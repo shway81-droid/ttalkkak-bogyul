@@ -11,6 +11,8 @@ export function mount(el, ctx) {
   let remainMs = 0;
   let timeUpDone = false;
   let lastResult = null; // 바로 앞 결과 한 줄
+  // 남은 시간은 이 칸만 고친다. 화면 전체를 1초마다 다시 그리면 누르는 사이 버튼이 바뀌어 클릭이 사라진다.
+  let leftSpan = null;
   // 버튼을 두 번 누르면 두 번째 누름이 그 자리에 새로 나온 버튼에 닿는다
   // ([낱말 보이기]→[맞혔어요], [맞혔어요]→다음 모둠의 [낱말 보이기]). ctx.gate 로 막는다.
   const settled = () => ctx.gate.ready();
@@ -48,8 +50,18 @@ export function mount(el, ctx) {
     toReady(`${team + 1}모둠 정답은 '${answer}'였어요`);
   });
 
+  const leftText = (sec) => (sec > 0 ? `남은 시간 ${sec}초` : '시간 끝!');
+
+  function updateLeft() {
+    if (!leftSpan) return;
+    const sec = Math.max(0, Math.ceil(remainMs / 1000));
+    leftSpan.setAttribute('data-left', String(sec));
+    leftSpan.textContent = leftText(sec);
+  }
+
   function render() {
     const turn = ctx.api.currentTurn();
+    leftSpan = null;
     if (mode === 'ready') {
       fill(el,
         h('div', { class: 'gesture' },
@@ -65,11 +77,10 @@ export function mount(el, ctx) {
       return;
     }
     const sec = Math.max(0, Math.ceil(remainMs / 1000));
+    leftSpan = h('span', { 'data-left': String(sec) }, leftText(sec));
     fill(el,
       h('div', { class: 'gesture' },
-        h('div', { class: 'who', 'data-turn': String(turn) },
-          `${turn + 1}모둠 · `,
-          h('span', { 'data-left': String(sec) }, sec > 0 ? `남은 시간 ${sec}초` : '시간 끝!')),
+        h('div', { class: 'who', 'data-turn': String(turn) }, `${turn + 1}모둠 · `, leftSpan),
         h('p', { class: 'gesture-topic' }, word.topic ? `주제: ${word.topic}` : ''),
         h('p', { class: 'gesture-word', 'data-word': '' }, word.word),
         h('p', { class: 'gesture-sub' }, '🤫 말하지 않고 몸으로만 · 다른 모둠은 답을 말하지 않아요'),
@@ -92,7 +103,7 @@ export function mount(el, ctx) {
         timeUpDone = true;
         ctx.sfx.timeUp();
       }
-      if (Math.ceil(remainMs / 1000) !== before) render();
+      if (Math.ceil(remainMs / 1000) !== before) updateLeft();
     },
     onStars() {
       render();
