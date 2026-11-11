@@ -1,7 +1,7 @@
 // 세트 진행 화면: 위쪽 띠 · 별판 · 규칙 안내 · 활동.
 // 시계는 하나(setInterval 200ms + performance.now 차이). 멈춤 하나로 모든 시간이 함께 멈춘다.
 import { h, fill, formatRemain } from './dom.js';
-import { guard } from './guard.js';
+import { guard, settleGate } from './guard.js';
 import * as S from '../core/session.js';
 import { rulesFor } from '../core/rules.js';
 import { ACTIVITIES, STEP_ICON } from '../activities/index.js';
@@ -152,6 +152,9 @@ export function runSession(root, { plan, teamCount, sfx, onExit }) {
     const host = h('section', { class: `act act-${step.kind}`, 'data-view': 'activity', 'data-kind': step.kind });
     fill(stage, host);
     const mod = ACTIVITIES[step.kind];
+    // [▶ 시작]을 두 번 누르면 두 번째 누름이 활동의 버튼에 닿는다 → 처음 400ms 는 무시.
+    const gate = settleGate();
+    gate.mark();
     activity = mod.mount(host, {
       step,
       band: plan.band,
@@ -160,6 +163,7 @@ export function runSession(root, { plan, teamCount, sfx, onExit }) {
       api,
       sfx,
       guard: (fn) => guard(fn),
+      gate,
     });
     renderStrip();
   }

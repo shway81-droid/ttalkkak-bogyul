@@ -29,23 +29,28 @@ export function mount(el, ctx) {
     discussMs = DISCUSS_SEC * 1000;
     hintShown = false;
     mode = 'ask';
+    ctx.gate.mark();
     render();
   }
 
+  // 버튼이 같은 자리에서 바뀌므로(두 번 누름의 두 번째가 새 버튼에 닿음) ctx.gate 로 막는다.
+  const ready = () => ctx.gate.ready();
+
   const onHint = ctx.guard(() => {
-    if (mode !== 'ask' || !item.hint) return;
+    if (mode !== 'ask' || !item.hint || !ready()) return;
     hintShown = true;
     render();
   });
 
   const onReveal = ctx.guard(() => {
-    if (mode !== 'ask') return;
+    if (mode !== 'ask' || !ready()) return;
     mode = 'revealed';
+    ctx.gate.mark();
     render();
   });
 
   const onCorrect = ctx.guard(() => {
-    if (mode !== 'ask') return;
+    if (mode !== 'ask' || !ready()) return;
     ctx.api.awardTurn();
     ctx.sfx.correct();
     mode = 'flash';
@@ -54,11 +59,12 @@ export function mount(el, ctx) {
   });
 
   const onPass = ctx.guard(() => {
-    if (mode !== 'ask') return;
+    if (mode !== 'ask' || !ready()) return;
     ctx.api.passTurn();
     if (ctx.api.currentTurn() === originTurn) {
       // 모든 모둠이 한 번씩 기회를 가졌다 → 정답 공개
       mode = 'revealed';
+      ctx.gate.mark();
     } else {
       discussMs = DISCUSS_SEC * 1000;
     }
@@ -67,7 +73,7 @@ export function mount(el, ctx) {
 
   // 아무도 맞히지 못한 문제를 마치면 다음 모둠이 새 문제를 받는다.
   const onNextItem = ctx.guard(() => {
-    if (mode !== 'revealed') return;
+    if (mode !== 'revealed' || !ready()) return;
     ctx.api.passTurn();
     newItem();
   });

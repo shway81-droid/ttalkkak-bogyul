@@ -58,6 +58,7 @@ export function mount(el, ctx) {
   }
 
   const next = ctx.guard(() => {
+    if (!ctx.gate.ready()) return;
     if (i < list.length - 1) {
       i += 1;
       render();

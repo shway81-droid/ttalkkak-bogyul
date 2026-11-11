@@ -757,3 +757,140 @@
   font-size: 1.1rem;
   color: var(--muted);
 }
+
+/* ---------- 몸으로 말해요 ---------- */
+.gesture {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 2vh;
+  padding: 2vh 4vw 0;
+}
+
+.gesture-last {
+  font-size: 1.2rem;
+  color: var(--muted);
+}
+
+.gesture-ready {
+  font-size: max(1.8rem, 4.2vh);
+  font-weight: 900;
+}
+
+.gesture-sub {
+  font-size: 1.2rem;
+  color: var(--muted);
+}
+
+.gesture-topic {
+  font-size: 1.2rem;
+  color: var(--muted);
+  min-height: 1.4em;
+}
+
+.gesture-word {
+  font-size: min(7rem, 16vh);
+  font-weight: 900;
+  line-height: 1.15;
+  color: var(--accent);
+}
+
+/* ---------- 상식 퀴즈 판 ---------- */
+.quiz {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 1.6vh;
+  padding: 1.5vh 4vw 0;
+}
+
+.quiz-emoji {
+  font-size: min(5rem, 11vh);
+  line-height: 1;
+}
+
+.quiz-q {
+  font-size: min(2.8rem, 6.4vh);
+  font-weight: 900;
+  line-height: 1.25;
+  max-width: 90vw;
+}
+
+.quiz-q.long {
+  font-size: min(2.1rem, 5vh);
+}
+
+.quiz-opts {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.2vh 1.2rem;
+  width: min(100%, 60rem);
+}
+
+.quiz-opt {
+  background: var(--panel-2);
+  border: 3px solid transparent;
+  border-radius: 0.9rem;
+  padding: 0.5em 0.9em;
+  font-size: min(1.9rem, 4.4vh);
+  font-weight: 800;
+  text-align: left;
+}
+
+.quiz-mark {
+  color: var(--accent);
+  font-weight: 900;
+}
+
+.quiz-opt.correct {
+  border-color: var(--ok);
+  background: rgba(6, 214, 160, 0.2);
+}
+
+.quiz-opt.dim {
+  opacity: 0.4;
+}
+
+.quiz-buttons {
+  gap: 0.7rem;
+}
+
+.quiz-teams {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.quiz-teams-label {
+  font-weight: 800;
+  color: var(--muted);
+}
+
+.team-toggle {
+  border: 3px solid var(--line);
+  border-radius: 0.7rem;
+  background: transparent;
+  padding: 0.4em 0.8em;
+  font-size: 1.1rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.team-toggle[aria-pressed='true'] {
+  background: var(--ok);
+  border-color: var(--ok);
+  color: var(--ok-ink);
+}

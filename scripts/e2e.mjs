@@ -26,6 +26,21 @@ ACT_STEPS.word = async (page) => {
   return 1;
 };
 
+ACT_STEPS.gesture = async (page) => {
+  await click(page, 'show-word');
+  await page.waitForTimeout(GUARD_WAIT);
+  await click(page, 'correct');
+  return 1;
+};
+
+ACT_STEPS.quizboard = async (page) => {
+  await click(page, 'reveal');
+  await page.waitForTimeout(GUARD_WAIT);
+  await click(page, 'team-toggle-0');
+  await click(page, 'award-and-next');
+  return 1;
+};
+
 /** 세트를 열고 kind 순서의 활동 화면까지 바로 간다 */
 export async function openStep(page, base, { grade, flow = 'lively', teams = 6, kind }) {
   await page.goto(base);
@@ -36,6 +51,7 @@ export async function openStep(page, base, { grade, flow = 'lively', teams = 6, 
   await page.locator(`[data-step-kind="${kind}"]`).first().click();
   await click(page, 'start-step');
   await page.locator(`[data-kind="${kind}"]`).waitFor();
+  await page.waitForTimeout(GUARD_WAIT);
 }
 
 const inViewport = async (page, selector) => {
@@ -59,6 +75,7 @@ export async function runSet(page, { grade, flow, teams }, base) {
   for (let i = 0; i < count; i++) {
     await page.locator(act('start-step')).waitFor();
     await click(page, 'start-step');
+    await page.waitForTimeout(GUARD_WAIT); // 활동은 처음 400ms 누름을 무시한다
     const kind = await page.locator('[data-kind]').first().getAttribute('data-kind');
     if (ACT_STEPS[kind]) given += (await ACT_STEPS[kind](page, { grade, flow, teams })) || 0;
     if (i < count - 1) {
@@ -145,6 +162,7 @@ async function main() {
         && (await page.locator(act('correct')).count()) === 0
         && (await page.locator(act('pass')).count()) === 0;
       check('말놀이: 모둠 수만큼 넘기면 정답과 [다음 문제]만', answerShown && onlyNext);
+      await page.waitForTimeout(GUARD_WAIT);
       await click(page, 'next-item');
       const nextTurn = await page.locator('[data-turn]').getAttribute('data-turn');
       check('말놀이: 아무도 못 맞힌 다음 문제는 다음 모둠 차례', Number(nextTurn) === (Number(startTurn) + 1) % 6, `${startTurn} → ${nextTurn}`);
@@ -157,6 +175,75 @@ async function main() {
       await page.waitForTimeout(1300);
       const d3 = await page.locator('[data-discuss]').getAttribute('data-discuss');
       check('말놀이: ▶ 다시 누르면 의논 시간이 줄어듦', Number(d3) < Number(d2), `${d2} → ${d3}`);
+      await page.waitForTimeout(GUARD_WAIT);
+      await click(page, 'reveal');
+      await page.waitForTimeout(GUARD_WAIT);
+      const t1 = await totalStars(page);
+      await page.locator(act('next-item')).dblclick();
+      await page.waitForTimeout(100);
+      check('말놀이: [다음 문제] 두 번 눌러도 별이 들어가지 않음', (await totalStars(page)) === t1, `${t1} → ${await totalStars(page)}`);
+      await page.close();
+    }
+
+    // [▶ 시작] 두 번 누름이 활동 버튼에 닿지 않음
+    {
+      const page = await ctx.newPage();
+      await page.goto(base);
+      await click(page, 'grade-3');
+      await click(page, 'start');
+      await page.locator('[data-step-kind="word"]').click();
+      await page.locator(act('start-step')).dblclick();
+      await page.waitForTimeout(100);
+      check('[▶ 시작] 두 번 눌러도 별이 들어가지 않음', (await totalStars(page)) === 0, String(await totalStars(page)));
+      await page.close();
+    }
+
+    // 몸으로 말해요 (Task 8)
+    {
+      const page = await ctx.newPage();
+      await openStep(page, base, { grade: 3, flow: 'lively', teams: 6, kind: 'gesture' });
+      const before = await page.locator('[data-kind="gesture"]').innerHTML();
+      const hiddenFirst = (await page.locator('[data-word]').count()) === 0;
+      const t00 = await totalStars(page);
+      await page.locator(act('show-word')).dblclick();
+      await page.waitForTimeout(100);
+      check('몸으로 말해요: [낱말 보이기] 두 번 눌러도 별이 들어가지 않음', (await totalStars(page)) === t00);
+      const word = (await page.locator('[data-word]').innerText()).trim();
+      check('몸으로 말해요: 준비 화면에는 낱말이 없음', hiddenFirst && word.length > 0 && !before.includes(word), word);
+      await page.waitForTimeout(GUARD_WAIT);
+      const t0 = await totalStars(page);
+      await page.locator(act('correct')).dblclick();
+      await page.waitForTimeout(100);
+      check('몸으로 말해요: [맞혔어요] 두 번 눌러도 별 +1', (await totalStars(page)) === t0 + 1);
+      check('몸으로 말해요: 맞히면 다음 모둠 준비 화면', (await page.locator(act('show-word')).isVisible()) && (await page.locator('[data-word]').count()) === 0);
+      await page.close();
+    }
+
+    // 상식 퀴즈 판 (Task 8)
+    {
+      const page = await ctx.newPage();
+      await openStep(page, base, { grade: 3, flow: 'calm', teams: 6, kind: 'quizboard' });
+      check('상식 퀴즈: 보기 4개', (await page.locator('[data-option]').count()) === 4);
+      check('상식 퀴즈: 차례 강조 없음', (await page.locator('.team.turn').count()) === 0);
+      const t0 = await totalStars(page);
+      await page.locator(act('reveal')).dblclick();
+      await page.waitForTimeout(100);
+      const stray = await page.locator('[data-act^="team-toggle-"][aria-pressed="true"]').count();
+      check('상식 퀴즈: [정답 보기] 두 번 눌러도 모둠 버튼이 켜지지 않음', stray === 0, String(stray));
+      await page.waitForTimeout(GUARD_WAIT);
+      await click(page, 'team-toggle-1');
+      await click(page, 'team-toggle-3');
+      await page.locator(act('award-and-next')).dblclick();
+      await page.waitForTimeout(100);
+      check('상식 퀴즈: 두 모둠 켜고 [별 주고 다음 문제] → +2', (await totalStars(page)) === t0 + 2, `${t0} → ${await totalStars(page)}`);
+      await page.waitForTimeout(GUARD_WAIT);
+      await click(page, 'reveal');
+      await page.waitForTimeout(GUARD_WAIT);
+      const pressed = await page.locator('[data-act^="team-toggle-"][aria-pressed="true"]').count();
+      check('상식 퀴즈: 다음 문제의 모둠 버튼은 모두 꺼짐', pressed === 0, String(pressed));
+      await click(page, 'all-correct');
+      const allOn = await page.locator('[data-act^="team-toggle-"][aria-pressed="true"]').count();
+      check('상식 퀴즈: [모두 맞혔어요] → 모두 켜짐', allOn === 6, String(allOn));
       await page.close();
     }
   } finally {
