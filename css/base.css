@@ -1,0 +1,143 @@
+/* 딸깍 보결 — 색·글꼴 토큰, 버튼, 공통 */
+:root {
+  --bg: #14213d;
+  --bg-2: #1b2b4f;
+  --panel: rgba(255, 255, 255, 0.08);
+  --panel-2: rgba(255, 255, 255, 0.14);
+  --line: rgba(255, 255, 255, 0.18);
+  --text: #f7f8fb;
+  --muted: #c3cbe0;
+  --accent: #ffd166;
+  --accent-ink: #231c05;
+  --ok: #06d6a0;
+  --ok-ink: #06322a;
+  --warn: #ef476f;
+  --seg-c: #5aa0d8;
+  --seg-m: #8f80e0;
+  --seg-h: #f08a40;
+  --seg-n: #9aa5b1;
+  --radius: 0.8rem;
+  --font: 'Pretendard', 'Pretendard Variable', system-ui, -apple-system, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif;
+  color-scheme: dark;
+}
+
+/* 교실 TV(1920×1080)에서 약 25px, 노트북(1366×768)에서 약 18px */
+html {
+  font-size: clamp(14px, calc(1.6vh + 0.4vw), 28px);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  line-height: 1.45;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  overflow-x: hidden;
+}
+
+h1, h2, h3, p, ul {
+  margin: 0;
+}
+
+ul {
+  padding: 0;
+  list-style: none;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+.btn {
+  border: 0;
+  border-radius: var(--radius);
+  padding: 0.6em 1.3em;
+  background: var(--panel-2);
+  color: var(--text);
+  font-weight: 800;
+  cursor: pointer;
+  line-height: 1.2;
+  transition: filter 0.15s, transform 0.1s;
+}
+
+.btn:hover:not(:disabled) {
+  filter: brightness(1.12);
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+button:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.btn-go {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.btn-ok {
+  background: var(--ok);
+  color: var(--ok-ink);
+}
+
+.btn-warn {
+  background: var(--warn);
+  color: #fff;
+}
+
+.btn-big {
+  font-size: 1.25rem;
+  padding: 0.65em 1.5em;
+}
+
+.btn-huge {
+  font-size: 1.6rem;
+  padding: 0.55em 2.2em;
+}
+
+.teacher-note {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.credit {
+  color: var(--muted);
+  font-size: 0.75rem;
+  text-align: center;
+  opacity: 0.8;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
