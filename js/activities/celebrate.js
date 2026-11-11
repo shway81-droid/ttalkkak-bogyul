@@ -1,4 +1,4 @@
-// ⑥ 별 축하·마무리: 반 전체 별 합계만 크게. 모둠 순위는 보여 주지 않는다.
+// 마지막 순서, 별 축하·마무리: 반 전체 별 합계만 크게. 모둠 순위는 보여 주지 않는다.
 import { h, fill } from '../ui/dom.js';
 import { totalStars } from '../core/session.js';
 

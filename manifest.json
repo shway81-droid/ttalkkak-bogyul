@@ -1,0 +1,14 @@
+{
+  "name": "딸깍 보결",
+  "short_name": "딸깍 보결",
+  "description": "갑자기 보결 들어간 초등 선생님을 위한 40분 모둠 수업. 학년만 누르면 시작돼요.",
+  "lang": "ko",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#14213d",
+  "theme_color": "#14213d",
+  "icons": [
+    { "src": "favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

@@ -1,0 +1,294 @@
+/* 진행 대본: A4 한 장(여백 12mm → 내용 186mm × 273mm). 화면에서도 종이 모양 그대로 보여 준다. */
+@page {
+  size: A4;
+  margin: 12mm;
+}
+
+:root {
+  --ink: #1d1d1f;
+  --soft: #55575c;
+  --line: #c9ccd3;
+  --tint: #f3f5f9;
+  --accent: #0b7a75;
+  --font: 'Pretendard Variable', 'Pretendard', system-ui, -apple-system, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 9pt;
+}
+
+body {
+  margin: 0;
+  background: #e6e8ec;
+  color: var(--ink);
+  font-family: var(--font);
+  line-height: 1.38;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+/* ---- 화면에서만: 인쇄 버튼 ---- */
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 12px 16px;
+}
+
+.print-btn {
+  font: inherit;
+  font-size: 14pt;
+  font-weight: 700;
+  padding: 10px 26px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+}
+
+.print-btn:hover {
+  filter: brightness(1.1);
+}
+
+.toolbar-note {
+  margin: 0;
+  font-size: 11pt;
+  color: var(--soft);
+}
+
+/* ---- 종이 ---- */
+.sheet {
+  width: 186mm;
+  /* 화면에서는 종이 여백(12mm 흰 테두리)이 [인쇄] 버튼을 덮지 않게 띄운다 */
+  margin: 16mm auto 18mm;
+  padding: 0;
+  background: #fff;
+  box-shadow: 0 0 0 12mm #fff, 0 2px 18px 12mm rgba(0, 0, 0, 0.12);
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  gap: 3mm;
+  border-bottom: 0.6mm solid var(--accent);
+  padding-bottom: 1.2mm;
+  margin-bottom: 2mm;
+}
+
+.head h1 {
+  margin: 0;
+  font-size: 14pt;
+  font-weight: 800;
+  color: var(--accent);
+}
+
+.head-sub {
+  margin: 0;
+  font-size: 9.5pt;
+  font-weight: 600;
+}
+
+.cols {
+  column-count: 2;
+  column-gap: 5mm;
+}
+
+.sec {
+  break-inside: avoid;
+  border: 0.25mm solid var(--line);
+  border-radius: 1.5mm;
+  padding: 1.6mm 2.2mm 1.8mm;
+  margin: 0 0 2mm;
+}
+
+.sec h2 {
+  margin: 0 0 0.8mm;
+  font-size: 10.5pt;
+  font-weight: 800;
+}
+
+.sec h2 .no {
+  display: inline-block;
+  min-width: 4.6mm;
+  padding: 0 1mm;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  text-align: center;
+  font-size: 9pt;
+}
+
+.sec h2 .min {
+  font-size: 8.5pt;
+  font-weight: 600;
+  color: var(--soft);
+}
+
+ul,
+ol {
+  margin: 0;
+  padding-left: 4.2mm;
+}
+
+.how {
+  color: var(--soft);
+  padding-left: 3.4mm;
+}
+
+.how li::marker {
+  content: '· ';
+}
+
+.items {
+  margin-top: 1mm;
+}
+
+.items li {
+  margin-bottom: 0.4mm;
+}
+
+.items .a {
+  font-size: 8pt;
+  font-weight: 700;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.words-label {
+  margin: 1mm 0 0.4mm;
+  font-weight: 700;
+}
+
+.words {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.2mm 2mm;
+  padding-left: 4.2mm;
+  font-weight: 600;
+}
+
+.story {
+  margin-top: 1mm;
+}
+
+.story p {
+  margin: 0 0 0.6mm;
+}
+
+.story-title {
+  font-weight: 800;
+}
+
+.story-text {
+  background: var(--tint);
+  border-radius: 1mm;
+  padding: 1mm 1.6mm;
+}
+
+.story-q {
+  font-weight: 700;
+}
+
+.draw-title {
+  margin: 1mm 0 0.6mm;
+  font-weight: 700;
+}
+
+.thumbs {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 1mm;
+  padding: 0;
+  list-style: none;
+}
+
+.thumb {
+  position: relative;
+  border: 0.25mm solid var(--line);
+  border-radius: 1mm;
+  aspect-ratio: 1;
+  padding: 0.6mm;
+}
+
+.thumb svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.thumb path {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.thumb path.old {
+  stroke: #a3a7b0;
+}
+
+.thumb path.new {
+  stroke: var(--ink);
+}
+
+.thumb-no {
+  position: absolute;
+  left: 0.6mm;
+  top: 0.2mm;
+  font-size: 7pt;
+  font-weight: 800;
+  color: var(--accent);
+}
+
+.decorate {
+  margin: 1mm 0 0;
+  font-weight: 600;
+}
+
+.foot {
+  border-top: 0.25mm solid var(--line);
+  padding-top: 1.2mm;
+}
+
+.foot p {
+  margin: 0;
+}
+
+.tally {
+  font-weight: 700;
+}
+
+.credit {
+  margin-top: 0.4mm !important;
+  font-size: 7.5pt;
+  color: var(--soft);
+}
+
+.error {
+  font-size: 12pt;
+  font-weight: 700;
+  padding: 10mm 0 2mm;
+}
+
+/* ---- 인쇄할 때 ---- */
+@media print {
+  body {
+    background: #fff;
+  }
+
+  .toolbar {
+    display: none;
+  }
+
+  .sheet {
+    margin: 0;
+    box-shadow: none;
+  }
+}

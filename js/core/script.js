@@ -1,7 +1,7 @@
 // 화면 없이 말과 칠판만으로 40분을 진행하는 선생님용 진행 대본 내용.
 import { WORD_TYPES } from './wordTypes.js';
 
-export const TALLY = '칠판에 모둠별로 바를 정(正) 자를 써서 별을 셉니다';
+export const TALLY = '칠판에 모둠별로 바를 정 자를 한 획씩 그어 별을 셉니다';
 
 const MARKS = ['①', '②', '③', '④'];
 const COUNTS = { word: 10, gesture: 15, quizboard: 10 };

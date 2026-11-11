@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>진행 대본 · 딸깍 보결</title>
+  <meta name="theme-color" content="#14213d">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="css/fonts.css">
+  <link rel="stylesheet" href="css/print.css">
+</head>
+<body>
+  <div class="toolbar">
+    <button class="print-btn" type="button" data-act="print-now">🖨 인쇄</button>
+    <p class="toolbar-note">A4 한 장으로 나와요. 새로고침하면 문제가 새로 뽑혀요.</p>
+  </div>
+  <main id="sheet" class="sheet" aria-label="선생님용 진행 대본"></main>
+  <noscript>이 페이지는 자바스크립트가 켜져 있어야 해요.</noscript>
+  <script type="module" src="js/print.js"></script>
+  <script>
+    // 한 번 열면 인터넷이 끊겨도 쓸 수 있게(sw.js)
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+/* 자체 호스팅 글꼴(Pretendard, SIL OFL 1.1 — assets/fonts/LICENSE.txt).
+   인터넷이 끊겨도 같은 글꼴이 나오도록 서비스 워커가 함께 담아 둔다.
+   서브셋에 없는 글자는 뒤의 시스템 글꼴로 나온다(scripts/check-font-coverage.mjs 가 알려 줌). */
+@font-face {
+  font-family: 'Pretendard Variable';
+  font-style: normal;
+  font-weight: 45 920;
+  font-display: swap;
+  src: url('../assets/fonts/PretendardVariable.subset.woff2') format('woff2-variations'),
+    url('../assets/fonts/PretendardVariable.subset.woff2') format('woff2');
+}

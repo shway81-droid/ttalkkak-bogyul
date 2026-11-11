@@ -16,7 +16,7 @@ test('g3-lively 대본: 섹션 6개, 분 합 40, 제목', () => {
   assert.equal(sc.sections.reduce((s, x) => s + x.minutes, 0), 40);
   for (const sec of sc.sections) assert.ok(sec.how.length >= 1, sec.title);
   assert.equal(sc.tally, TALLY);
-  assert.equal(TALLY, '칠판에 모둠별로 바를 정(正) 자를 써서 별을 셉니다');
+  assert.equal(TALLY, '칠판에 모둠별로 바를 정 자를 한 획씩 그어 별을 셉니다');
 });
 
 test('말놀이 섹션: 문제 10개, 정답이 모두 있다', () => {

@@ -72,7 +72,7 @@ export function mount(el, ctx) {
           h('span', { 'data-left': String(sec) }, sec > 0 ? `남은 시간 ${sec}초` : '시간 끝!')),
         h('p', { class: 'gesture-topic' }, word.topic ? `주제: ${word.topic}` : ''),
         h('p', { class: 'gesture-word', 'data-word': '' }, word.word),
-        h('p', { class: 'gesture-sub' }, '쉿! 말하지 않고 몸으로만 · 다른 모둠은 답을 말하지 않아요'),
+        h('p', { class: 'gesture-sub' }, '🤫 말하지 않고 몸으로만 · 다른 모둠은 답을 말하지 않아요'),
       ),
       h('div', { class: 'act-buttons' },
         h('button', { class: 'btn btn-big btn-ok', type: 'button', 'data-act': 'correct', onClick: onCorrect }, '⭕ 맞혔어요 (+★)'),

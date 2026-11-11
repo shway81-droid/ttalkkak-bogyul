@@ -6,6 +6,9 @@
   <title>딸깍 보결</title>
   <meta name="description" content="갑자기 보결 들어간 초등 선생님을 위한 40분 모둠 수업. 학년만 누르면 시작돼요.">
   <meta name="theme-color" content="#14213d">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="css/fonts.css">
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/app.css">
 </head>
@@ -13,5 +16,11 @@
   <div id="app"></div>
   <noscript>이 사이트는 자바스크립트가 켜져 있어야 해요.</noscript>
   <script type="module" src="js/main.js"></script>
+  <script>
+    // 한 번 열면 인터넷이 끊겨도 쓸 수 있게(sw.js)
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
+    }
+  </script>
 </body>
 </html>

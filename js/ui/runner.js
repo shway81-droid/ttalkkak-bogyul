@@ -37,7 +37,7 @@ export function runSession(root, { plan, teamCount, sfx, onExit }) {
   // ---- 별판 -----------------------------------------------------------------
   const teamsEl = h('div', { class: 'teams' });
   const totalEl = h('span', { class: 'class-total', 'data-total': '0' });
-  const undoBtn = h('button', { class: 'tool-btn', type: 'button', 'data-act': 'undo', title: '마지막 별 되돌리기', onClick: undo }, '↶ 되돌리기');
+  const undoBtn = h('button', { class: 'tool-btn', type: 'button', 'data-act': 'undo', title: '마지막 별 되돌리기', onClick: undo }, '↺ 되돌리기');
 
   const stage = h('div', { class: 'stage' });
 

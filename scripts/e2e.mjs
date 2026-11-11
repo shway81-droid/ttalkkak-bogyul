@@ -1,9 +1,13 @@
 // 브라우저 검사(Playwright). 서버를 띄우고 실제 화면을 마우스로 눌러 본다.
 import { chromium } from 'playwright';
+import { readFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { startServer } from './serve.mjs';
 
 const GUARD_WAIT = 450; // 두 번 눌림 막기(400ms)보다 조금 길게
+const SETS = JSON.parse(readFileSync(new URL('../data/sets.json', import.meta.url), 'utf8')).sets;
+// 브라우저 기본 여백(약 10mm)보다 조금 넓게 잡아도 한 장에 들어가야 한다.
+const PRINT_MARGIN = { top: '12mm', right: '12mm', bottom: '12mm', left: '12mm' };
 
 const act = (name) => `[data-act="${name}"]`;
 
@@ -325,6 +329,53 @@ async function main() {
       const allOn = await page.locator('[data-act^="team-toggle-"][aria-pressed="true"]').count();
       check('상식 퀴즈: [모두 맞혔어요] → 모두 켜짐', allOn === 6, String(allOn));
       await page.close();
+    }
+
+    // 진행 대본: 12세트 모두 A4 한 장
+    {
+      const page = await ctx.newPage();
+      const errors = [];
+      page.on('pageerror', (e) => errors.push(String(e)));
+      page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
+      for (const s of SETS) {
+        await page.goto(`${base}print.html?grade=${s.grade}&flow=${s.flow}`);
+        await page.locator('body[data-ready]').waitFor();
+        const pdf = await page.pdf({ format: 'A4', printBackground: true, margin: PRINT_MARGIN });
+        const pages = (pdf.toString('latin1').match(/\/Type\s*\/Page[^s]/g) || []).length;
+        check(`진행 대본 ${s.id}: A4 한 장`, pages === 1, `${pages}장`);
+      }
+      const text = await page.locator('body').innerText();
+      check('진행 대본: 별 세는 법(바를 정 자)이 있음', text.includes('바를 정 자'));
+      await page.emulateMedia({ media: 'print' });
+      check('진행 대본: 인쇄할 때 [인쇄] 버튼은 숨김', await page.locator(act('print-now')).isHidden());
+      check('진행 대본: 콘솔 오류 0', errors.length === 0, errors.join(' | '));
+      await page.close();
+    }
+
+    // 인터넷이 끊겨도: 한 번 연 뒤 오프라인으로 다시 열기
+    {
+      const octx = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
+      try {
+        const first = await octx.newPage();
+        await first.goto(base);
+        await first.evaluate(() => navigator.serviceWorker.ready.then(() => true));
+        await first.close();
+        await octx.setOffline(true);
+        const page = await octx.newPage();
+        await page.goto(base);
+        check('오프라인: 첫 화면이 뜸', await page.locator(act('grade-1')).isVisible());
+        await click(page, 'grade-1');
+        await click(page, 'flow-lively');
+        await click(page, 'start');
+        await click(page, 'start-step');
+        const firstKind = await page.locator('[data-kind]').first().getAttribute('data-kind');
+        check('오프라인: g1-lively 첫 순서가 뜸', firstKind === 'greet', String(firstKind));
+        await page.goto(`${base}print.html?grade=1&flow=lively`);
+        await page.locator('body[data-ready]').waitFor();
+        check('오프라인: 진행 대본도 열림', (await page.locator('body').innerText()).includes('바를 정 자'));
+      } finally {
+        await octx.close();
+      }
     }
   } finally {
     await browser.close();
