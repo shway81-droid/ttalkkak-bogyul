@@ -64,6 +64,14 @@ export function filterWords(items) {
   return items.filter((w) => WORD_TYPES_KEPT.includes(w.type));
 }
 
+/** 인물 퀴즈에 쓰는 주제: 이 주제는 모든 난이도, 나머지 인물은 쉬움(easy)만 (2026-11-11 사용자 결정) */
+export const PERSON_TOPICS_ALL_LEVELS = ['가수', '배우', '예능인'];
+
+/** 인물 퀴즈 후보: 가수·배우·예능인은 모두, 역사 인물·과학자·예술가·운동선수는 쉬움만 */
+export function filterPeople(items) {
+  return items.filter((w) => w.type === 'person' && (PERSON_TOPICS_ALL_LEVELS.includes(w.topic) || w.level === 'easy'));
+}
+
 function git(...args) {
   return execFileSync('git', args, { encoding: 'utf8' }).trim();
 }

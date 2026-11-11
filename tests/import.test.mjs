@@ -36,3 +36,17 @@ test('filterWords: 쓰지 않는 유형은 버린다', () => {
   const kept = filterWords(items);
   assert.deepEqual(kept.map((w) => w.type), WORD_TYPES_KEPT);
 });
+
+test('filterPeople: 가수·배우·예능인은 모두, 다른 인물은 쉬움만 남긴다', async () => {
+  const { filterPeople } = await import('../scripts/import-jjam.mjs');
+  const items = [
+    { id: 'a', type: 'person', topic: '가수', level: 'hard' },
+    { id: 'b', type: 'person', topic: '배우', level: 'normal' },
+    { id: 'c', type: 'person', topic: '예능인', level: 'hard' },
+    { id: 'd', type: 'person', topic: '과학자', level: 'easy' },
+    { id: 'e', type: 'person', topic: '역사 인물', level: 'normal' },
+    { id: 'f', type: 'person', topic: '운동선수', level: 'hard' },
+    { id: 'g', type: 'riddle', topic: '가수', level: 'easy' },
+  ];
+  assert.deepEqual(filterPeople(items).map((p) => p.id), ['a', 'b', 'c', 'd']);
+});
