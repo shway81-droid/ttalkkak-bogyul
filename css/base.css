@@ -1,23 +1,28 @@
 /* 딸깍 보결 — 색·글꼴 토큰, 버튼, 공통 */
+/* 짬짬이 교실 가족과 같은 밝은 톤: 연회색 바탕 + 흰 카드 + 남색 글자 + 노랑 강조 */
 :root {
-  --bg: #14213d;
-  --bg-2: #1b2b4f;
-  --panel: rgba(255, 255, 255, 0.08);
-  --panel-2: rgba(255, 255, 255, 0.14);
-  --line: rgba(255, 255, 255, 0.18);
-  --text: #f7f8fb;
-  --muted: #c3cbe0;
-  --accent: #ffd166;
-  --accent-ink: #231c05;
-  --ok: #06d6a0;
-  --ok-ink: #06322a;
-  --warn: #ef476f;
-  --seg-m: #8f80e0;
+  --bg: #f4f6fa;
+  --bg-2: #ffffff;
+  --panel: #ffffff;
+  --panel-2: #e9edf5;
+  --line: #dce1ec;
+  --text: #152447;
+  --muted: #55607a;
+  --accent: #ffb703;
+  --accent-soft: #fff4d6;
+  --accent-text: #a86a00; /* 흰 바탕 위 노랑 글씨는 흐려서 진한 황토색으로 */
+  --accent-ink: #152447;
+  --ok: #12a57c;
+  --ok-ink: #ffffff;
+  --ok-text: #0b7a5b;
+  --warn: #e4576e;
+  --seg-m: #7a5fd0;
   --seg-h: #f08a40;
-  --seg-n: #9aa5b1;
+  --seg-n: #aab3c2;
+  --shadow: 0 3px 0 rgba(21, 36, 71, 0.12);
   --radius: 0.8rem;
   --font: 'Pretendard', 'Pretendard Variable', system-ui, -apple-system, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif;
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 /* 교실 TV(1920×1080)에서 약 25px, 노트북(1366×768)에서 약 18px */
@@ -74,7 +79,7 @@ button {
 }
 
 .btn:hover:not(:disabled) {
-  filter: brightness(1.12);
+  filter: brightness(0.95);
 }
 
 .btn:active:not(:disabled) {
@@ -94,6 +99,7 @@ button:focus-visible {
 .btn-go {
   background: var(--accent);
   color: var(--accent-ink);
+  box-shadow: var(--shadow);
 }
 
 .btn-ok {

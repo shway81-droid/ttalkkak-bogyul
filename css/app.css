@@ -28,7 +28,7 @@
 
 .brand h1 em {
   font-style: normal;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .brand p {
@@ -68,7 +68,7 @@
 }
 
 .chip:hover {
-  filter: brightness(1.15);
+  filter: brightness(0.95);
 }
 
 .chip[aria-pressed='true'] {
@@ -93,7 +93,7 @@
 
 .flow-card {
   text-align: left;
-  border: 3px solid transparent;
+  border: 3px solid var(--line);
   border-radius: 1rem;
   background: var(--panel);
   padding: 1rem 1.2rem;
@@ -105,7 +105,7 @@
 
 .flow-card[aria-pressed='true'] {
   border-color: var(--accent);
-  background: rgba(255, 209, 102, 0.12);
+  background: var(--accent-soft);
 }
 
 .flow-name {
@@ -163,7 +163,7 @@
 }
 
 .print-hint {
-  color: var(--accent);
+  color: var(--accent-text);
   font-size: 0.85rem;
   min-height: 1.2em;
 }
@@ -193,7 +193,8 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.4rem 0.8rem;
-  background: rgba(0, 0, 0, 0.35);
+  background: var(--panel);
+  border-bottom: 2px solid var(--line);
   min-width: 0;
 }
 
@@ -248,7 +249,7 @@
 }
 
 .timer.over {
-  color: #ff8fa8;
+  color: var(--warn);
 }
 
 .icon-btn {
@@ -287,8 +288,8 @@
 }
 
 @keyframes breathe {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 209, 102, 0.9); }
-  50% { box-shadow: 0 0 0 0.5rem rgba(255, 209, 102, 0); filter: brightness(1.15); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 183, 3, 0.9); }
+  50% { box-shadow: 0 0 0 0.5rem rgba(255, 183, 3, 0); filter: brightness(1.15); }
 }
 
 .board {
@@ -296,7 +297,7 @@
   align-items: center;
   gap: 0.6rem;
   padding: 0.35rem 0.8rem;
-  background: rgba(0, 0, 0, 0.18);
+  background: var(--panel-2);
   min-width: 0;
 }
 
@@ -314,14 +315,14 @@
   align-items: stretch;
   gap: 0.2rem;
   padding: 0.12rem;
-  border: 2px solid transparent;
+  border: 2px solid var(--line);
   border-radius: 0.55rem;
   background: var(--panel);
 }
 
 .team.turn {
   border-color: var(--accent);
-  background: rgba(255, 209, 102, 0.18);
+  background: var(--accent-soft);
 }
 
 .team-add {
@@ -349,7 +350,7 @@
 }
 
 .team-stars {
-  color: var(--accent);
+  color: var(--accent-text);
   font-weight: 900;
   font-size: 1rem;
   white-space: nowrap;
@@ -393,7 +394,7 @@
 
 .class-total {
   font-weight: 900;
-  color: var(--accent);
+  color: var(--accent-text);
   white-space: nowrap;
   font-size: 0.95rem;
 }
@@ -432,7 +433,7 @@
   position: absolute;
   top: 0.6rem;
   right: 0.8rem;
-  background: rgba(0, 0, 0, 0.6);
+  background: var(--panel);
   border: 2px solid var(--accent);
   border-radius: 999px;
   padding: 0.25rem 0.9rem;
@@ -445,7 +446,10 @@
   font-size: 0.65rem;
 }
 
-/* ---------- 규칙 안내 ---------- */
+/* ---------- 규칙 안내 ----------
+   선생님이 읽어 주는 화면이라 뒷자리에서도 읽히게 화면을 꽉 채운다.
+   글자는 높이(vh)와 너비(vw) 가운데 작은 쪽에 맞춰, 가장 긴 줄(약 29자)도 한 줄에 든다.
+   1920×1080 에서 안내 줄 약 65px, 제목 약 115px. */
 .rules {
   flex: 1;
   display: flex;
@@ -453,34 +457,46 @@
   align-items: center;
   justify-content: center;
   text-align: center;
-  gap: 2.2vh;
-  padding: 2vh 4vw;
+  gap: 3vh;
+  padding: 3vh 4vw;
 }
 
 .rules-step {
   color: var(--muted);
-  font-size: 1rem;
-  font-weight: 700;
+  font-size: min(4.4vh, 2.4vw);
+  font-weight: 800;
 }
 
 .rules-title {
-  font-size: 2.4rem;
+  font-size: min(10.5vh, 6vw);
   font-weight: 900;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
 }
 
-/* 1920×1080 에서 약 39px (32px 이상) */
 .rules-lines {
   display: flex;
   flex-direction: column;
-  gap: 1.2vh;
-  font-size: max(1.55rem, 3.6vh);
-  font-weight: 700;
+  gap: 2vh;
+  font-size: max(1.55rem, min(7vh, 3.4vw));
+  font-weight: 800;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
 }
 
 .rules-prep {
-  font-size: max(1.3rem, 3vh);
-  color: var(--accent);
+  font-size: max(1.3rem, min(5vh, 2.6vw));
+  color: var(--accent-text);
   font-weight: 800;
+}
+
+.rules .btn-huge {
+  font-size: max(1.6rem, min(6vh, 3.2vw));
+  margin-top: 1vh;
+}
+
+.rules .teacher-note {
+  font-size: max(0.85rem, min(2.6vh, 1.4vw));
 }
 
 /* ---------- 활동 공통 ---------- */
@@ -510,7 +526,8 @@
   padding: 1.5vh 1rem 2vh;
 }
 
-/* ---------- 인사 ---------- */
+/* ---------- 인사 ----------
+   규칙 안내와 같이 선생님이 읽어 주는 화면 — 화면을 꽉 채우는 큰 글자. */
 .greet {
   flex: 1;
   display: flex;
@@ -518,20 +535,22 @@
   align-items: center;
   justify-content: center;
   text-align: center;
-  gap: 1.8vh;
+  gap: 2.2vh;
   padding: 2vh 4vw 0;
 }
 
 .greet-dots {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.6rem;
 }
 
 .dot {
-  width: 0.7rem;
-  height: 0.7rem;
+  width: min(1.6vh, 0.9vw);
+  height: min(1.6vh, 0.9vw);
+  min-width: 0.7rem;
+  min-height: 0.7rem;
   border-radius: 50%;
-  background: var(--panel-2);
+  background: var(--line);
 }
 
 .dot.on {
@@ -539,36 +558,49 @@
 }
 
 .greet-icon {
-  font-size: 4rem;
+  font-size: max(4rem, min(13vh, 7vw));
   line-height: 1;
 }
 
 .greet-title {
-  font-size: 2.6rem;
+  font-size: max(2.6rem, min(10.5vh, 6vw));
   font-weight: 900;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
 }
 
 .greet-lines {
   display: flex;
   flex-direction: column;
-  gap: 1vh;
-  font-size: max(1.55rem, 3.6vh);
-  font-weight: 700;
+  gap: 1.6vh;
+  font-size: max(1.55rem, min(7vh, 3.4vw));
+  font-weight: 800;
+  line-height: 1.3;
 }
 
 .greet-teams {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.6rem;
+  gap: 0.8rem;
   justify-content: center;
 }
 
 .greet-team {
-  background: var(--panel-2);
-  border-radius: 0.7rem;
-  padding: 0.4em 1em;
-  font-size: 1.3rem;
+  background: var(--panel);
+  border: 2px solid var(--line);
+  border-radius: 0.8rem;
+  padding: 0.3em 0.9em;
+  /* 모둠이 8개여도 좁은 화면(1280px)에서 한 줄에 들도록 너비(vw)를 더 아낀다 */
+  font-size: max(1.1rem, min(4.4vh, 1.9vw));
   font-weight: 800;
+}
+
+.greet .teacher-note {
+  font-size: max(0.85rem, min(2.6vh, 1.4vw));
+}
+
+.greet .btn-big {
+  font-size: max(1.25rem, min(5vh, 2.8vw));
 }
 
 /* ---------- 축하 ---------- */
@@ -594,7 +626,7 @@
 }
 
 .cele-num {
-  color: var(--accent);
+  color: var(--accent-text);
   font-size: 1.4em;
 }
 
@@ -627,7 +659,7 @@
 .modal {
   position: fixed;
   inset: 0;
-  background: rgba(5, 10, 25, 0.7);
+  background: rgba(21, 36, 71, 0.45);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -738,12 +770,12 @@
 
 .word-hint {
   font-size: 1.5rem;
-  color: var(--accent);
+  color: var(--accent-text);
   font-weight: 700;
 }
 
 .word-answer {
-  background: rgba(6, 214, 160, 0.14);
+  background: rgba(18, 165, 124, 0.1);
   border: 2px solid var(--ok);
   border-radius: 1rem;
   padding: 0.6rem 1.6rem;
@@ -758,7 +790,7 @@
 }
 
 .word-answer-main strong {
-  color: #7ff0cf;
+  color: var(--ok-text);
 }
 
 .word-also,
@@ -805,7 +837,7 @@
   font-size: min(7rem, 16vh);
   font-weight: 900;
   line-height: 1.15;
-  color: var(--accent);
+  color: var(--text);
 }
 
 /* ---------- 상식 퀴즈 판 ---------- */
@@ -858,13 +890,13 @@
 }
 
 .quiz-mark {
-  color: var(--accent);
+  color: var(--accent-text);
   font-weight: 900;
 }
 
 .quiz-opt.correct {
   border-color: var(--ok);
-  background: rgba(6, 214, 160, 0.2);
+  background: rgba(18, 165, 124, 0.14);
 }
 
 .quiz-opt.dim {
@@ -956,7 +988,7 @@
 .story-title {
   font-size: 1.8rem;
   font-weight: 900;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .story-text {
@@ -998,7 +1030,7 @@
 
 .story-hint {
   font-size: 1.3rem;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .story-ideas {
@@ -1041,7 +1073,7 @@
 .picker-num {
   font-size: min(5rem, 12vh);
   font-weight: 900;
-  color: var(--accent);
+  color: var(--accent-text);
   min-width: 3ch;
 }
 
