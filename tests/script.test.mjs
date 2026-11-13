@@ -21,7 +21,7 @@ test('g3-lively 대본: 섹션 6개, 분 합 40, 제목', () => {
 
 test('말놀이 섹션: 문제 10개, 정답이 모두 있다', () => {
   const sc = buildScript(planOf('g3-lively'));
-  const word = sc.sections[1];
+  const word = sc.sections.find((s) => s.title === '말놀이');
   assert.equal(word.title, '말놀이');
   assert.equal(word.items.length, 10);
   for (const it of word.items) {

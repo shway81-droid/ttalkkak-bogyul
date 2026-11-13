@@ -33,9 +33,9 @@ test('WORD_TYPES: 9개 유형에 제목과 안내가 있다', () => {
 
 test('g3-lively 계획: 순서·분·제목', () => {
   const plan = buildPlan(setById('g3-lively'), data, makeRng(1));
-  assert.deepEqual(plan.steps.map((s) => s.kind), ['greet', 'word', 'gesture', 'person', 'story', 'celebrate']);
-  assert.deepEqual(plan.steps.map((s) => s.minutes), [3, 10, 10, 8, 7, 2]);
-  assert.deepEqual(plan.steps.map((s) => s.title), ['인사', '말놀이', '몸으로 말해요', '인물 퀴즈', '이야기', '축하']);
+  assert.deepEqual(plan.steps.map((s) => s.kind), ['greet', 'person', 'gesture', 'word', 'story', 'celebrate']);
+  assert.deepEqual(plan.steps.map((s) => s.minutes), [3, 8, 10, 10, 7, 2]);
+  assert.deepEqual(plan.steps.map((s) => s.title), ['인사', '인물 퀴즈', '몸으로 말해요', '말놀이', '이야기', '축하']);
   assert.equal(plan.title, '3학년 · 신나게 열기');
   assert.equal(plan.setId, 'g3-lively');
   assert.equal(plan.grade, 3);
@@ -45,8 +45,8 @@ test('g3-lively 계획: 순서·분·제목', () => {
 
 test('g3-calm 계획의 순서', () => {
   const plan = buildPlan(setById('g3-calm'), data, makeRng(1));
-  assert.deepEqual(plan.steps.map((s) => s.kind), ['greet', 'story', 'word', 'quizboard', 'person', 'celebrate']);
-  assert.deepEqual(plan.steps.map((s) => s.minutes), [3, 7, 10, 10, 8, 2]);
+  assert.deepEqual(plan.steps.map((s) => s.kind), ['greet', 'story', 'person', 'quizboard', 'word', 'celebrate']);
+  assert.deepEqual(plan.steps.map((s) => s.minutes), [3, 7, 8, 10, 10, 2]);
   assert.equal(plan.steps[3].title, '상식 퀴즈');
 });
 

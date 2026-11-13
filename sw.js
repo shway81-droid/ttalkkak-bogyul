@@ -348,7 +348,7 @@ const ASSETS = [
   './js/ui/start.js',
 ];
 
-const CACHE = 'ttalkkak-bogyul-1df5af9a2da1';
+const CACHE = 'ttalkkak-bogyul-fad83c631d24';
 const PREFIX = 'ttalkkak-bogyul-';
 
 self.addEventListener('install', (event) => {
