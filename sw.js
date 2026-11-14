@@ -345,18 +345,20 @@ const ASSETS = [
   './js/credits.js',
   './js/main.js',
   './js/print.js',
+  './js/single.js',
   './js/ui/dom.js',
   './js/ui/fx.js',
   './js/ui/guard.js',
   './js/ui/icon-paths.js',
   './js/ui/icons.js',
   './js/ui/live.js',
+  './js/ui/pages.js',
   './js/ui/runner.js',
   './js/ui/sfx.js',
   './js/ui/start.js',
 ];
 
-const CACHE = 'ttalkkak-bogyul-d0d5787b880f';
+const CACHE = 'ttalkkak-bogyul-a30259914f36';
 const PREFIX = 'ttalkkak-bogyul-';
 
 self.addEventListener('install', (event) => {

@@ -3,6 +3,8 @@ import { chromium } from 'playwright';
 import { readFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { startServer } from './serve.mjs';
+import { buildSingle } from './build-single.mjs';
+import { checkSingle } from './check-single.mjs';
 
 const GUARD_WAIT = 450; // 두 번 눌림 막기(400ms)보다 조금 길게
 const SETS = JSON.parse(readFileSync(new URL('../data/sets.json', import.meta.url), 'utf8')).sets;
@@ -667,6 +669,10 @@ async function main() {
         await octx.close();
       }
     }
+
+    // 단일 HTML 파일: 새로 만들어 file:// 로 열어 본다(scripts/build-single.mjs, check-single.mjs)
+    await buildSingle();
+    await checkSingle(browser, check);
   } finally {
     await browser.close();
     server.close();

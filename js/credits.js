@@ -2,17 +2,21 @@
 import { h, fill } from './ui/dom.js';
 import { licenseUrl } from './core/license.js';
 import { icon } from './ui/icons.js';
+import { loadData } from './core/data.js';
+import { pageUrl } from './ui/pages.js';
 
-document.querySelector('.back')?.prepend(icon('arrow-left'), ' ');
+const back = document.querySelector('.back');
+if (back) {
+  back.href = pageUrl('home');
+  back.prepend(icon('arrow-left'), ' ');
+}
 
 const link = (href, text, attrs = {}) => h('a', { href, target: '_blank', rel: 'noopener', ...attrs }, text);
 
 async function main() {
   const count = document.getElementById('count');
   try {
-    const res = await fetch('data/people.json');
-    if (!res.ok) throw new Error(String(res.status));
-    const { people } = await res.json();
+    const { people } = await loadData();
     fill(document.getElementById('rows'),
       people.map((p, i) => {
         const lic = licenseUrl(p.photo.license);

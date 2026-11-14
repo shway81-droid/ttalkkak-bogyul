@@ -2,6 +2,7 @@
 import { h, fill } from './dom.js';
 import { icon } from './icons.js';
 import { openAnswerWindow } from './live.js';
+import { pageUrl } from './pages.js';
 import { FLOWS } from '../core/flows.js';
 
 const SLOT_COLOR = { greet: 'n', word: 'h', team: 'h', person: 'h', story: 'm', celebrate: 'n' };
@@ -77,7 +78,7 @@ export function renderStart(root, { sets, onStart, onPrint }) {
         h('div', { class: 'chips' }, teamBtns),
       ),
       h('div', { class: 'start-bottom' }, h('div', { class: 'print-box' }, answerBtn, printBtn, printHint), startBtn),
-      h('footer', { class: 'credit' }, '문항·이야기·인물: 짬짬이 · ', h('a', { href: 'credits.html', 'data-act': 'credits' }, '인물 사진 출처')),
+      h('footer', { class: 'credit' }, '문항·이야기·인물: 짬짬이 · ', h('a', { href: pageUrl('credits'), 'data-act': 'credits' }, '인물 사진 출처')),
     ),
   );
   sync();

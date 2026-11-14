@@ -7,7 +7,7 @@ import { rulesFor } from '../core/rules.js';
 import { ACTIVITIES, STEP_ICON } from '../activities/index.js';
 import { icon, star, withIcons } from './icons.js';
 import { flyStar, bump, confetti } from './fx.js';
-import { LIVE_CHANNEL, openAnswerWindow } from './live.js';
+import { createLiveSender, openAnswerWindow } from './live.js';
 
 const TICK_MS = 200;
 // 차례가 있는 놀이에서만 별판의 차례 모둠을 강조한다.
@@ -30,19 +30,14 @@ export function runSession(root, { plan, teamCount, sfx, onExit }) {
   let goalDone = false;
 
   // ---- 선생님용 정답 창(answer.html)으로 지금 화면을 알린다 -------------------------
-  // 같은 브라우저의 두 창끼리 BroadcastChannel 로 — 서버도 인터넷도 필요 없다.
-  const live = typeof BroadcastChannel === 'function' ? new BroadcastChannel(LIVE_CHANNEL) : null;
+  // 서버도 인터넷도 필요 없다(js/ui/live.js). 정답 창이 늦게 열리면 hello 를 보내 오고, 마지막 내용을 다시 보낸다.
   let lastLive = { kind: 'idle' };
+  const live = createLiveSender(() => lastLive);
   function liveSend(info) {
     const step = plan.steps[state.stepIndex];
     lastLive = { ...info, set: plan.title, stepNo: state.stepIndex + 1, stepTitle: step?.title, turn: state.turn };
-    try {
-      live?.postMessage(lastLive);
-    } catch {
-      /* 창이 없어도 수업은 계속된다 */
-    }
+    live.send(lastLive);
   }
-  if (live) live.onmessage = (e) => { if (e.data?.kind === 'hello') liveSend(lastLive); };
 
   // [다음 순서] 버튼과 → 키가 같은 막기를 쓴다(빠른 두 번 누름 → 한 칸만).
   const guardedNext = guard(nextStep);
@@ -343,7 +338,7 @@ export function runSession(root, { plan, teamCount, sfx, onExit }) {
     window.removeEventListener('beforeunload', onBeforeUnload);
     destroyActivity();
     liveSend({ kind: 'idle', message: '수업이 끝났어요' });
-    live?.close();
+    live.close();
     onExit();
   }
 

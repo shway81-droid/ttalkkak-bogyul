@@ -6,6 +6,7 @@ import { renderStart } from './ui/start.js';
 import { runSession } from './ui/runner.js';
 import { createSfx } from './ui/sfx.js';
 import { h, fill } from './ui/dom.js';
+import { pageUrl } from './ui/pages.js';
 
 const root = document.getElementById('app');
 const sfx = createSfx();
@@ -24,7 +25,7 @@ function onStart({ grade, flow, teams }) {
 }
 
 function onPrint({ grade, flow }) {
-  window.open(`print.html?grade=${grade}&flow=${flow}`, '_blank', 'noopener');
+  window.open(pageUrl('print', `grade=${grade}&flow=${flow}`), '_blank', 'noopener');
 }
 
 async function boot() {

@@ -7,6 +7,7 @@ import { makeRng } from './core/rng.js';
 import { buildScript } from './core/script.js';
 import { h, fill } from './ui/dom.js';
 import { icon, withIcons } from './ui/icons.js';
+import { pageUrl, pageParams } from './ui/pages.js';
 
 // 문항 수 단계: 넘치면 다음 단계로(설계: word·quiz·person 10→8, gesture 15→12).
 export const LEVELS = [
@@ -71,11 +72,11 @@ function render(plan, script, level) {
 const fits = () => sheet.getBoundingClientRect().height <= (PAGE_MM - SAFETY_MM) * PX_PER_MM;
 
 function showError(msg) {
-  fill(sheet, h('p', { class: 'error' }, msg), h('p', null, h('a', { href: './' }, '처음 화면으로')));
+  fill(sheet, h('p', { class: 'error' }, msg), h('p', null, h('a', { href: pageUrl('home') }, '처음 화면으로')));
 }
 
 async function main() {
-  const params = new URLSearchParams(location.search);
+  const params = pageParams();
   const grade = Number(params.get('grade'));
   const flow = params.get('flow') || 'lively';
   try {

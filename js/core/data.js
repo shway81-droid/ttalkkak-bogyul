@@ -4,6 +4,8 @@
 const FILES = ['words', 'stories', 'people', 'quiz', 'sets'];
 
 export async function loadData(fetchFn = fetch, base = 'data/') {
+  // 단일 HTML 파일(scripts/build-single.mjs)은 자료를 파일 안에 이미 이 모양으로 담아 둔다
+  if (globalThis.__BOGYUL_DATA__) return globalThis.__BOGYUL_DATA__;
   const raw = await Promise.all(
     FILES.map(async (name) => {
       const res = await fetchFn(`${base}${name}.json`);

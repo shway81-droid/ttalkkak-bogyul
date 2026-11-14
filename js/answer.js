@@ -1,4 +1,4 @@
-// 선생님용 실시간 정답 창(answer.html). 수업 화면(js/ui/runner.js)이 BroadcastChannel 로 보낸
+// 선생님용 실시간 정답 창(answer.html, 단일 파일은 #answer). 수업 화면(js/ui/runner.js)이 보낸
 // "지금 화면의 문제"를 받아 정답을 크게 띄운다. 이 창은 아무것도 보내지 않는다(처음 열 때 hello 만).
 //
 // 받는 모양 — kind 별로 쓰는 칸만 채워 온다:
@@ -76,11 +76,26 @@ function render(d) {
   }
 }
 
-if (typeof BroadcastChannel === 'function') {
-  const live = new BroadcastChannel(LIVE_CHANNEL);
-  live.onmessage = (e) => { if (e.data && e.data.kind !== 'hello') render(e.data); };
-  // 수업 도중에 열면 "지금 무엇이 나와 있나"를 물어본다
-  live.postMessage({ kind: 'hello' });
-} else {
-  render({ kind: 'idle', message: '이 브라우저에서는 정답 창을 쓸 수 없어요. 크롬이나 엣지에서 열어 주세요.' });
+// 두 길(BroadcastChannel·postMessage, js/ui/live.js)로 같은 내용이 올 수 있어 같은 것은 한 번만 그린다
+let lastKey = '';
+function receive(d) {
+  if (!d || typeof d !== 'object' || !d.kind || d.kind === 'hello') return;
+  const key = JSON.stringify(d);
+  if (key === lastKey) return;
+  lastKey = key;
+  render(d);
+}
+
+const bc = typeof BroadcastChannel === 'function' ? new BroadcastChannel(LIVE_CHANNEL) : null;
+if (bc) bc.onmessage = (e) => receive(e.data);
+// 이 창을 연 수업 화면(window.opener)이 직접 보내는 길 — 단일 HTML 파일은 이 길만 된다
+window.addEventListener('message', (e) => {
+  if (e.source && e.source === window.opener) receive(e.data);
+});
+// 수업 도중에 열면 "지금 무엇이 나와 있나"를 물어본다
+bc?.postMessage({ kind: 'hello' });
+try {
+  window.opener?.postMessage({ kind: 'hello' }, '*');
+} catch {
+  /* 연 창이 없으면 BroadcastChannel 로만 */
 }
