@@ -143,7 +143,7 @@ export function mount(el, ctx) {
         h('ol', { class: 'stages', 'aria-label': '이야기 단계' },
           STORY_STAGES.map(([, name], i) => h('li', { class: i === stage ? 'on' : i < stage ? 'done' : '' }, name))),
         h('div', { class: 'who', 'data-stage': label }, `${label} · `, timerSpan),
-        h('div', { class: 'story-body' }, stageBody(), extras()),
+        h('div', { class: `story-body${STORY_STAGES[stage][0] === 'STORY' ? ' story-read' : ''}` }, stageBody(), extras()),
       ),
       h('div', { class: 'act-buttons' },
         h('button', { class: 'btn', type: 'button', 'data-act': 'stage-prev', disabled: stage === 0, onClick: onPrev }, icon('chevron-left'), ' 이전 단계'),
@@ -154,7 +154,33 @@ export function mount(el, ctx) {
       ),
     );
     updateTimer();
+    fitStory();
   }
+
+  // 이야기 읽기 단계: 본문을 남은 자리에 들어가는 가장 큰 글자로(뒷자리에서도 읽히게).
+  // 이야기마다 길이가 2~6문장으로 달라 고정 크기로는 짧은 이야기가 작고 긴 이야기는 넘친다.
+  function fitStory() {
+    const body = el.querySelector('.story-read');
+    if (!body) return;
+    const fits = () => body.scrollHeight <= body.clientHeight + 1 && body.scrollWidth <= body.clientWidth + 1;
+    const vh = window.innerHeight / 100;
+    const vw = window.innerWidth / 100;
+    let lo = 16;
+    let hi = Math.max(lo, Math.min(8 * vh, 4.2 * vw));
+    body.style.fontSize = `${hi}px`;
+    if (fits()) return;
+    for (let i = 0; i < 9; i++) {
+      const mid = (lo + hi) / 2;
+      body.style.fontSize = `${mid}px`;
+      if (fits()) lo = mid;
+      else hi = mid;
+    }
+    body.style.fontSize = `${lo}px`;
+  }
+
+  const onResize = () => fitStory();
+  window.addEventListener('resize', onResize);
+  document.fonts?.ready.then(() => fitStory());
 
   render();
 
@@ -164,6 +190,8 @@ export function mount(el, ctx) {
       remainMs -= dt;
       updateTimer();
     },
-    destroy() {},
+    destroy() {
+      window.removeEventListener('resize', onResize);
+    },
   };
 }

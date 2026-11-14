@@ -13,6 +13,7 @@ const ASSETS = [
   './assets/fonts/LICENSE.txt',
   './assets/fonts/PretendardVariable.subset.woff2',
   './assets/fonts/coverage.txt',
+  './assets/icons/LICENSE.txt',
   './assets/people/person-001.webp',
   './assets/people/person-002.webp',
   './assets/people/person-003.webp',
@@ -343,12 +344,14 @@ const ASSETS = [
   './js/print.js',
   './js/ui/dom.js',
   './js/ui/guard.js',
+  './js/ui/icon-paths.js',
+  './js/ui/icons.js',
   './js/ui/runner.js',
   './js/ui/sfx.js',
   './js/ui/start.js',
 ];
 
-const CACHE = 'ttalkkak-bogyul-fad83c631d24';
+const CACHE = 'ttalkkak-bogyul-d369d8438405';
 const PREFIX = 'ttalkkak-bogyul-';
 
 self.addEventListener('install', (event) => {

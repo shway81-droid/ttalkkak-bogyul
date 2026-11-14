@@ -1016,6 +1016,33 @@
   font-size: min(1.5rem, 3.4vh);
 }
 
+/* 이야기 읽기 단계: 글자 크기는 story.js 의 fitStory() 가 .story-read 에 px 로 정하고,
+   제목·본문은 그 크기를 em 으로 따른다(힌트·예시 생각도 함께 들어가게 맞춤). */
+.story-read {
+  max-width: 100%;
+  width: 100%;
+  overflow: hidden;
+  gap: 0.5em;
+}
+
+.story-read .story-title {
+  font-size: 1.15em;
+  line-height: 1.25;
+}
+
+.story-read .story-text,
+.story-read .story-text.long {
+  font-size: 1em;
+  line-height: 1.45;
+  gap: 0.25em;
+  font-weight: 700;
+}
+
+.story-read .story-hint,
+.story-read .story-ideas {
+  font-size: 0.6em;
+}
+
 .story-q {
   font-size: min(2.6rem, 6vh);
   font-weight: 900;
