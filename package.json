@@ -8,10 +8,14 @@
     "e2e": "node scripts/e2e.mjs",
     "serve": "node scripts/serve.mjs",
     "stamp": "node scripts/sw-version.mjs",
-    "icons": "node scripts/build-icons.mjs"
+    "icons": "node scripts/build-icons.mjs",
+    "photos": "node scripts/shrink-photos.mjs",
+    "single": "node scripts/build-single.mjs"
   },
   "devDependencies": {
+    "esbuild": "0.25.12",
     "lucide-static": "1.72.0",
-    "playwright": "^1.61.1"
+    "playwright": "^1.61.1",
+    "sharp": "0.35.5"
   }
 }

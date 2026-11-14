@@ -2,7 +2,8 @@
 // 사용자의 로컬 jjam-classroom 폴더는 건드리지 않고, .cache/jjam-classroom 복제본만 읽는다.
 // --no-pull: 이미 받은 복제본을 그대로 쓴다(원본을 새로 받지 않음).
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync, rmSync, copyFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync, rmSync } from 'node:fs';
+import { shrinkPhoto } from './shrink-photos.mjs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { runInNewContext } from 'node:vm';
@@ -122,7 +123,7 @@ function countBy(items, keyFn) {
   return out;
 }
 
-function main() {
+async function main() {
   const commit = syncCache(!process.argv.includes('--no-pull'));
   const source = { repo: REPO.replace(/\.git$/, ''), commit };
   mkdirSync(join(ROOT, 'data'), { recursive: true });
@@ -132,13 +133,14 @@ function main() {
   writeJson('words.json', { source, items: words });
 
   // 인물 퀴즈: 사진은 원본과 같은 경로(assets/people/…)로 복사한다. 빠진 인물의 옛 사진이 남지 않게 폴더를 새로 만든다.
+  // 복사하면서 세로 540px 로 줄인다(scripts/shrink-photos.mjs — TV 에서 차이가 거의 없고 용량은 절반).
   const people = withFullAuthors(filterPeople(wordItems));
   const photoDir = join(ROOT, 'assets', 'people');
   rmSync(photoDir, { recursive: true, force: true });
   mkdirSync(photoDir, { recursive: true });
   for (const p of people) {
     if (!PHOTO_FILE_RE.test(p.photo?.file || '')) throw new Error(`${p.id}: 사진 경로가 이상합니다 (${p.photo?.file})`);
-    copyFileSync(join(CACHE, 'word', p.photo.file), join(ROOT, p.photo.file));
+    await shrinkPhoto(join(CACHE, 'word', p.photo.file), join(ROOT, p.photo.file));
   }
   writeJson('people.json', { source, people });
 
@@ -166,4 +168,9 @@ function main() {
   console.log('퀴즈 학년대:', JSON.stringify(countBy(quiz, (q) => q.bands)));
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) main();
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main().catch((e) => {
+    console.error(e);
+    process.exit(1);
+  });
+}

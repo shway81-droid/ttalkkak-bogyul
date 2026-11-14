@@ -16,6 +16,7 @@ npm run e2e       # 브라우저 검사(약 7분)
 
 - 짬짬이 자료를 다시 가져오려면 `npm run import` (처음에는 `.cache/jjam-classroom` 에 짬짬이 저장소를 받습니다). 이미 받은 사본 그대로 쓰려면 `node scripts/import-jjam.mjs --no-pull`.
 - 화면 파일을 더하거나 빼거나 바꾸면 `npm run stamp` (서비스 워커 파일 목록·캐시 이름).
+- 인물 사진은 세로 540px·화질 70 WebP 로 줄여 둔다(2026-11-14, 7.3MB → 3.4MB). `npm run import` 가 복사하며 줄이고, 따로 줄이려면 `npm run photos`(이미 작은 사진은 건드리지 않음).
 
 ## 지금 상태
 
