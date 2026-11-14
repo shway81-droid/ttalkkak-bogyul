@@ -1,6 +1,9 @@
 // 인물 사진 출처 페이지(credits.html): 사진마다 저작자·라이선스·원본 주소.
 import { h, fill } from './ui/dom.js';
 import { licenseUrl } from './core/license.js';
+import { icon } from './ui/icons.js';
+
+document.querySelector('.back')?.prepend(icon('arrow-left'), ' ');
 
 const link = (href, text, attrs = {}) => h('a', { href, target: '_blank', rel: 'noopener', ...attrs }, text);
 

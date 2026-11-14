@@ -12,6 +12,7 @@
   --accent-soft: #fff4d6;
   --accent-text: #a86a00; /* 흰 바탕 위 노랑 글씨는 흐려서 진한 황토색으로 */
   --accent-ink: #152447;
+  --star: #f5a800;
   --ok: #12a57c;
   --ok-ink: #ffffff;
   --ok-text: #0b7a5b;
@@ -136,6 +137,40 @@ button:focus-visible {
 
 .credit a {
   color: inherit;
+}
+
+/* 루시드 아이콘: 글자처럼 줄 안에 놓이고 글자 크기를 따른다 */
+.ic {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  flex-shrink: 0;
+  vertical-align: -0.14em;
+  line-height: 0;
+}
+
+.ic svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* 별은 속을 채운 노랑. 노랑 단추 위에서는 단추 글자색을 따른다 */
+.ic-star {
+  color: var(--star);
+}
+
+.btn-go .ic-star,
+.pill.on .ic-star,
+.next-btn .ic-star {
+  color: inherit;
+}
+
+/* 아이콘만 있는 단추는 아이콘을 가운데에 */
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 [hidden] {

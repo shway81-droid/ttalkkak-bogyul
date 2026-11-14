@@ -4,13 +4,13 @@
 export const FLOWS = {
   lively: {
     label: '신나게 열기',
-    icon: '🎉',
+    icon: 'zap', // 루시드 아이콘 이름
     blurb: '놀이로 신나게 시작해서, 이야기로 차분하게 마칩니다.',
     slots: [['greet', 3], ['person', 8], ['team', 10], ['word', 10], ['story', 7], ['celebrate', 2]],
   },
   calm: {
     label: '차분하게 열기',
-    icon: '🍃',
+    icon: 'leaf',
     blurb: '이야기로 차분하게 시작해서, 모둠 대항 놀이는 마지막 선물로 둡니다.',
     slots: [['greet', 3], ['story', 7], ['person', 8], ['team', 10], ['word', 10], ['celebrate', 2]],
   },

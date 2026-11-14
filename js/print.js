@@ -6,6 +6,7 @@ import { buildPlan } from './core/plan.js';
 import { makeRng } from './core/rng.js';
 import { buildScript } from './core/script.js';
 import { h, fill } from './ui/dom.js';
+import { icon, withIcons } from './ui/icons.js';
 
 // 문항 수 단계: 넘치면 다음 단계로(설계: word·quiz·person 10→8, gesture 15→12).
 export const LEVELS = [
@@ -39,7 +40,7 @@ function sectionBody(sec, kind, level) {
     parts.push(h('div', { class: 'story' },
       h('p', { class: 'story-title' }, `「${sec.story.title}」`),
       h('p', { class: 'story-text' }, sec.story.text.join(' ')),
-      h('p', { class: 'story-q' }, `❓ ${main}`),
+      h('p', { class: 'story-q' }, icon('circle-help'), ` ${main}`),
       follow.length ? h('ul', { class: 'story-follow' }, follow.map((f) => h('li', null, f))) : null));
   }
   return parts;
@@ -63,7 +64,7 @@ function render(plan, script, level) {
           sectionBody(sec, kind, level));
       })),
     h('footer', { class: 'foot' },
-      h('p', { class: 'tally' }, `★ 별 세기: ${script.tally}. 모둠끼리 비교하지 않고 “우리 반 별”로 함께 셉니다.`),
+      h('p', { class: 'tally' }, withIcons(`★ 별 세기: ${script.tally}. 모둠끼리 비교하지 않고 “우리 반 별”로 함께 셉니다.`)),
       h('p', { class: 'credit' }, '딸깍 보결 · 문항·이야기·인물: 짬짬이')));
 }
 
@@ -105,5 +106,7 @@ async function main() {
   }
 }
 
-document.querySelector('[data-act="print-now"]').addEventListener('click', () => window.print());
+const printBtn = document.querySelector('[data-act="print-now"]');
+printBtn.prepend(icon('printer'), ' ');
+printBtn.addEventListener('click', () => window.print());
 main();

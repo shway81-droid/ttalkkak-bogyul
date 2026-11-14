@@ -1,6 +1,7 @@
 // 몸으로 말해요: 차례 모둠 대표가 화면을 등지고, 모둠 친구들이 말없이 몸으로 설명한다.
 // 준비 화면에서는 낱말을 DOM 에 넣지 않는다(미리 보이지 않게).
 import { h, fill } from '../ui/dom.js';
+import { icon, star } from '../ui/icons.js';
 
 export const GESTURE_SEC = 60;
 
@@ -39,7 +40,7 @@ export function mount(el, ctx) {
     if (mode !== 'word' || !settled()) return;
     const team = ctx.api.awardTurn();
     ctx.sfx.correct();
-    toReady(`⭕ ${team + 1}모둠 맞혔어요! ★ +1`);
+    toReady([icon('circle-check'), ` ${team + 1}모둠 맞혔어요! `, star(), ' +1']);
   });
 
   const onPass = ctx.guard(() => {
@@ -71,7 +72,7 @@ export function mount(el, ctx) {
           h('p', { class: 'gesture-sub' }, '모둠 친구들은 화면을 보고, 말없이 몸으로만 설명해요'),
         ),
         h('div', { class: 'act-buttons' },
-          h('button', { class: 'btn btn-huge btn-go', type: 'button', 'data-act': 'show-word', onClick: onShow }, '▶ 낱말 보이기'),
+          h('button', { class: 'btn btn-huge btn-go', type: 'button', 'data-act': 'show-word', onClick: onShow }, icon('play', { fill: true }), ' 낱말 보이기'),
         ),
       );
       return;
@@ -83,11 +84,11 @@ export function mount(el, ctx) {
         h('div', { class: 'who', 'data-turn': String(turn) }, `${turn + 1}모둠 · `, leftSpan),
         h('p', { class: 'gesture-topic' }, word.topic ? `주제: ${word.topic}` : ''),
         h('p', { class: 'gesture-word', 'data-word': '' }, word.word),
-        h('p', { class: 'gesture-sub' }, '🤫 말하지 않고 몸으로만 · 다른 모둠은 답을 말하지 않아요'),
+        h('p', { class: 'gesture-sub' }, icon('mic-off'), ' 말하지 않고 몸으로만 · 다른 모둠은 답을 말하지 않아요'),
       ),
       h('div', { class: 'act-buttons' },
-        h('button', { class: 'btn btn-big btn-ok', type: 'button', 'data-act': 'correct', onClick: onCorrect }, '⭕ 맞혔어요 (+★)'),
-        h('button', { class: 'btn btn-big btn-warn', type: 'button', 'data-act': 'pass', onClick: onPass }, '⏭ 넘기기'),
+        h('button', { class: 'btn btn-big btn-ok', type: 'button', 'data-act': 'correct', onClick: onCorrect }, icon('circle-check'), ' 맞혔어요 (+', star(), ')'),
+        h('button', { class: 'btn btn-big btn-warn', type: 'button', 'data-act': 'pass', onClick: onPass }, icon('skip-forward'), ' 넘기기'),
       ),
     );
   }

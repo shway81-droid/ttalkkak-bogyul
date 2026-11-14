@@ -5,6 +5,7 @@ import { guard, settleGate } from './guard.js';
 import * as S from '../core/session.js';
 import { rulesFor } from '../core/rules.js';
 import { ACTIVITIES, STEP_ICON } from '../activities/index.js';
+import { icon, star, withIcons } from './icons.js';
 
 const TICK_MS = 200;
 // 차례가 있는 놀이에서만 별판의 차례 모둠을 강조한다.
@@ -31,18 +32,19 @@ export function runSession(root, { plan, teamCount, sfx, onExit }) {
     h('button', { class: 'pill', type: 'button', 'data-act': `goto-${i}`, 'data-step-kind': step.kind, title: `${step.title} ${step.minutes}분`, onClick: () => goTo(i) },
       h('span', { class: 'pill-no' }, String(i + 1)), ' ', step.title),
   );
-  const timerEl = h('span', { class: 'timer', 'data-remain': '', 'aria-live': 'off' });
+  const timerText = h('span');
+  const timerEl = h('span', { class: 'timer', 'data-remain': '', 'aria-live': 'off' }, icon('timer'), ' ', timerText);
   const pauseBtn = h('button', { class: 'icon-btn', type: 'button', 'data-act': 'pause', onClick: togglePause });
   const muteBtn = h('button', { class: 'icon-btn', type: 'button', 'data-act': 'mute', onClick: toggleMute });
-  const fsBtn = h('button', { class: 'icon-btn', type: 'button', 'data-act': 'fullscreen', title: '전체화면', 'aria-label': '전체화면', onClick: toggleFullscreen }, '⛶');
-  const nextBtn = h('button', { class: 'next-btn', type: 'button', 'data-act': 'next-step', onClick: guardedNext }, '다음 순서 ▶');
-  const exitBtn = h('button', { class: 'icon-btn', type: 'button', 'data-act': 'exit', title: '끝내기', 'aria-label': '끝내기', onClick: openExit }, '✕');
-  const pausedBadge = h('div', { class: 'paused-badge', hidden: true }, '⏸ 잠깐 멈췄어요');
+  const fsBtn = h('button', { class: 'icon-btn', type: 'button', 'data-act': 'fullscreen', title: '전체화면', 'aria-label': '전체화면', onClick: toggleFullscreen }, icon('maximize'));
+  const nextBtn = h('button', { class: 'next-btn', type: 'button', 'data-act': 'next-step', onClick: guardedNext }, '다음 순서 ', icon('chevron-right'));
+  const exitBtn = h('button', { class: 'icon-btn', type: 'button', 'data-act': 'exit', title: '끝내기', 'aria-label': '끝내기', onClick: openExit }, icon('x'));
+  const pausedBadge = h('div', { class: 'paused-badge', hidden: true }, icon('pause'), ' 잠깐 멈췄어요');
 
   // ---- 별판 -----------------------------------------------------------------
   const teamsEl = h('div', { class: 'teams' });
   const totalEl = h('span', { class: 'class-total', 'data-total': '0' });
-  const undoBtn = h('button', { class: 'tool-btn', type: 'button', 'data-act': 'undo', title: '마지막 별 되돌리기', onClick: undo }, '↺ 되돌리기');
+  const undoBtn = h('button', { class: 'tool-btn', type: 'button', 'data-act': 'undo', title: '마지막 별 되돌리기', onClick: undo }, icon('undo-2'), ' 되돌리기');
 
   const stage = h('div', { class: 'stage' });
 
@@ -89,17 +91,17 @@ export function runSession(root, { plan, teamCount, sfx, onExit }) {
       p.setAttribute('aria-current', i === state.stepIndex ? 'step' : 'false');
     });
     nextBtn.disabled = state.stepIndex >= lastIndex;
-    pauseBtn.textContent = state.paused ? '▶' : '⏸';
+    pauseBtn.replaceChildren(icon(state.paused ? 'play' : 'pause', { fill: true }));
     pauseBtn.setAttribute('aria-label', state.paused ? '다시 시작' : '잠깐 멈춤');
     pauseBtn.title = state.paused ? '다시 시작 (Space)' : '잠깐 멈춤 (Space)';
     pausedBadge.hidden = !state.paused;
-    muteBtn.textContent = sfx.muted ? '🔇' : '🔊';
+    muteBtn.replaceChildren(icon(sfx.muted ? 'volume-x' : 'volume-2'));
     muteBtn.setAttribute('aria-label', sfx.muted ? '소리 켜기' : '소리 끄기');
     updateTimer();
   }
 
   function updateTimer() {
-    timerEl.textContent = `⏱ ${formatRemain(state.remainMs)}`;
+    timerText.textContent = formatRemain(state.remainMs);
     const over = state.phase === 'active' && S.isOvertime(state);
     timerEl.classList.toggle('over', over);
     nextBtn.classList.toggle('blink', over && state.stepIndex < lastIndex);
@@ -120,7 +122,7 @@ export function runSession(root, { plan, teamCount, sfx, onExit }) {
       return h('div', { class: `team${isTurn ? ' turn' : ''}`, 'data-team': String(t) },
         h('button', { class: 'team-add', type: 'button', 'data-act': `star-add-${t}`, title: `${t + 1}모둠 별 더하기`, 'aria-label': `${t + 1}모둠 별 더하기 (지금 ${n}개)`, onClick: addStar[t] },
           h('span', { class: 'team-name' }, `${t + 1}모둠`),
-          h('span', { class: 'team-stars' }, `★${n}`),
+          h('span', { class: 'team-stars' }, star(), String(n)),
           h('span', { class: 'team-plus', 'aria-hidden': 'true' }, '+'),
         ),
         h('button', { class: 'mini', type: 'button', 'data-act': `star-remove-${t}`, title: `${t + 1}모둠 별 빼기`, 'aria-label': `${t + 1}모둠 별 빼기`, onClick: removeStar[t] }, '−'),
@@ -128,7 +130,7 @@ export function runSession(root, { plan, teamCount, sfx, onExit }) {
     }));
     const total = S.totalStars(state);
     totalEl.setAttribute('data-total', String(total));
-    totalEl.textContent = `우리 반 ★${total}`;
+    totalEl.replaceChildren('우리 반 ', star(), String(total));
     undoBtn.disabled = state.log.length === 0;
   }
 
@@ -143,11 +145,11 @@ export function runSession(root, { plan, teamCount, sfx, onExit }) {
     fill(stage,
       h('section', { class: 'rules', 'data-view': 'rules' },
         h('p', { class: 'rules-step' }, `${state.stepIndex + 1}번째 순서 · ${step.minutes}분`),
-        h('h2', { class: 'rules-title' }, `${STEP_ICON[step.kind] || ''} ${step.title}`),
-        h('ul', { class: 'rules-lines' }, lines.map((l) => h('li', null, l))),
-        prep && h('p', { class: 'rules-prep' }, `🎒 ${prep}`),
-        h('button', { class: 'btn btn-go btn-huge', type: 'button', 'data-act': 'start-step', onClick: guard(startStep) }, '▶ 시작'),
-        h('p', { class: 'teacher-note' }, '선생님: 위 글을 읽어 주고 [▶ 시작]을 눌러 주세요'),
+        h('h2', { class: 'rules-title' }, STEP_ICON[step.kind] ? icon(STEP_ICON[step.kind]) : null, ` ${step.title}`),
+        h('ul', { class: 'rules-lines' }, lines.map((l) => h('li', null, withIcons(l)))),
+        prep && h('p', { class: 'rules-prep' }, icon('backpack'), ` ${prep}`),
+        h('button', { class: 'btn btn-go btn-huge', type: 'button', 'data-act': 'start-step', onClick: guard(startStep) }, icon('play', { fill: true }), ' 시작'),
+        h('p', { class: 'teacher-note' }, '선생님: 위 글을 읽어 주고 [시작]을 눌러 주세요'),
       ),
     );
   }
@@ -159,7 +161,7 @@ export function runSession(root, { plan, teamCount, sfx, onExit }) {
     const host = h('section', { class: `act act-${step.kind}`, 'data-view': 'activity', 'data-kind': step.kind });
     fill(stage, host);
     const mod = ACTIVITIES[step.kind];
-    // [▶ 시작]을 두 번 누르면 두 번째 누름이 활동의 버튼에 닿는다 → 처음 400ms 는 무시.
+    // [시작]을 두 번 누르면 두 번째 누름이 활동의 버튼에 닿는다 → 처음 400ms 는 무시.
     const gate = settleGate();
     gate.mark();
     activity = mod.mount(host, {

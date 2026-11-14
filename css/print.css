@@ -237,3 +237,19 @@ ol {
     box-shadow: none;
   }
 }
+
+/* 루시드 아이콘: 글자처럼 줄 안에 놓이고 글자 크기를 따른다 */
+.ic {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  flex-shrink: 0;
+  vertical-align: -0.14em;
+  line-height: 0;
+}
+
+.ic svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}

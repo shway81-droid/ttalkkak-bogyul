@@ -7,13 +7,13 @@ import * as story from './story.js';
 import * as celebrate from './celebrate.js';
 
 export const STEP_ICON = {
-  greet: '👋',
-  word: '🔤',
-  gesture: '🙆',
-  quizboard: '❓',
-  person: '🧑',
-  story: '📖',
-  celebrate: '🎉',
+  greet: 'hand',
+  word: 'spell-check',
+  gesture: 'person-standing',
+  quizboard: 'circle-help',
+  person: 'scan-face',
+  story: 'book-open',
+  celebrate: 'party-popper',
 };
 
 // 인물 퀴즈는 말놀이와 진행이 같아 word.js 가 함께 맡는다(step.kind 로 사진 화면을 가른다).

@@ -1,6 +1,7 @@
 // 상식 퀴즈 판: 모든 모둠이 함께 의논하고 손가락으로 보기 번호를 든다.
 // 정답을 본 뒤 맞힌 모둠을 켜고 [별 주고 다음 문제] 한 번으로 ★을 준다. 차례 개념은 쓰지 않는다.
 import { h, fill } from '../ui/dom.js';
+import { icon } from '../ui/icons.js';
 import { makeRng, shuffle } from '../core/rng.js';
 
 export const QUIZ_DISCUSS_SEC = 15;
@@ -61,13 +62,13 @@ export function mount(el, ctx) {
     newItem();
   });
 
-  const discussText = (sec) => (sec > 0 ? `모든 모둠 의논 ${sec}초` : '✋ 손가락을 들어요!');
+  const discussText = (sec) => (sec > 0 ? [`모든 모둠 의논 ${sec}초`] : [icon('hand'), ' 손가락을 들어요!']);
 
   function updateDiscuss() {
     if (!discussSpan) return;
     const sec = Math.max(0, Math.ceil(discussMs / 1000));
     discussSpan.setAttribute('data-discuss', String(sec));
-    discussSpan.textContent = discussText(sec);
+    discussSpan.replaceChildren(...discussText(sec));
   }
 
   function render() {
@@ -95,7 +96,7 @@ export function mount(el, ctx) {
           }, `${t + 1}모둠`)),
         ),
         h('button', { class: 'btn btn-big', type: 'button', 'data-act': 'all-correct', onClick: allCorrect }, '모두 맞혔어요'),
-        h('button', { class: 'btn btn-big btn-ok', type: 'button', 'data-act': 'award-and-next', onClick: onAwardNext }, '별 주고 다음 문제 ▶'),
+        h('button', { class: 'btn btn-big btn-ok', type: 'button', 'data-act': 'award-and-next', onClick: onAwardNext }, '별 주고 다음 문제 ', icon('chevron-right')),
       ];
     }
 

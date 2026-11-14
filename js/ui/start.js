@@ -1,5 +1,6 @@
-// 첫 화면: 학년 → 흐름 → 모둠 수 → [▶ 시작]. 고른 값은 저장하지 않는다.
+// 첫 화면: 학년 → 흐름 → 모둠 수 → [시작]. 고른 값은 저장하지 않는다.
 import { h, fill } from './dom.js';
+import { icon } from './icons.js';
 import { FLOWS } from '../core/flows.js';
 
 const SLOT_COLOR = { greet: 'n', word: 'h', team: 'h', person: 'h', story: 'm', celebrate: 'n' };
@@ -15,7 +16,7 @@ export function renderStart(root, { sets, onStart, onPrint }) {
   );
   const flowCards = Object.entries(FLOWS).map(([id, f]) =>
     h('button', { class: 'flow-card', type: 'button', 'data-act': `flow-${id}`, 'aria-pressed': 'false', onClick: () => choose('flow', id) },
-      h('span', { class: 'flow-name' }, `${f.icon} ${f.label}`),
+      h('span', { class: 'flow-name' }, icon(f.icon), ` ${f.label}`),
       h('span', { class: 'flow-bar', 'aria-hidden': 'true' },
         f.slots.map(([slot, min]) => h('i', { class: `seg seg-${SLOT_COLOR[slot]}`, style: { flexGrow: String(min) }, title: `${SLOT_NAME[slot]} ${min}분` })),
       ),
@@ -26,10 +27,10 @@ export function renderStart(root, { sets, onStart, onPrint }) {
   const teamBtns = TEAM_CHOICES.map((n) =>
     h('button', { class: 'chip', type: 'button', 'data-act': `teams-${n}`, 'aria-pressed': 'false', onClick: () => choose('teams', n) }, String(n)),
   );
-  const startBtn = h('button', { class: 'btn btn-go', type: 'button', 'data-act': 'start', disabled: true, onClick: () => onStart({ ...sel }) }, '▶ 시작');
+  const startBtn = h('button', { class: 'btn btn-go', type: 'button', 'data-act': 'start', disabled: true, onClick: () => onStart({ ...sel }) }, icon('play', { fill: true }), ' 시작');
   const printHint = h('span', { class: 'print-hint', role: 'status' });
   const printBtn = h('button', { class: 'print-link', type: 'button', 'data-act': 'print', onClick: printClick },
-    '🖨 화면을 못 쓰나요? 선생님용 진행 대본 인쇄');
+    icon('printer'), ' 화면을 못 쓰나요? 선생님용 진행 대본 인쇄');
 
   function printClick() {
     if (!sel.grade) {

@@ -1,6 +1,7 @@
 // 이야기 나누기(7분): 읽기 → 혼자 생각 → 나누기 → 발표 → 생각 넓히기.
 // 단계 시간은 tick 으로만 줄고, 0이 되면 [다음 단계]가 천천히 빛난다(저절로 넘어가지 않음).
 import { h, fill } from '../ui/dom.js';
+import { icon, star, withIcons } from '../ui/icons.js';
 import { makeRng, shuffle } from '../core/rng.js';
 
 export const STORY_STAGES = [
@@ -81,7 +82,7 @@ export function mount(el, ctx) {
 
   function stageBody() {
     const key = STORY_STAGES[stage][0];
-    const q = h('p', { class: 'story-q' }, `❓ ${story.mainQuestion}`);
+    const q = h('p', { class: 'story-q' }, icon('circle-help'), ` ${story.mainQuestion}`);
     if (key === 'STORY') {
       return [
         h('h2', { class: 'story-title' }, story.title),
@@ -89,11 +90,11 @@ export function mount(el, ctx) {
           story.story.map((line) => h('p', { 'data-sentence': '' }, line))),
       ];
     }
-    if (key === 'THINK') return [q, h('p', { class: 'story-sub' }, '🤫 혼자 조용히 내 생각을 정해요')];
-    if (key === 'TALK') return [q, h('p', { class: 'story-sub' }, '🗣 짝·모둠과 이야기 나눠요')];
+    if (key === 'THINK') return [q, h('p', { class: 'story-sub' }, icon('mic-off'), ' 혼자 조용히 내 생각을 정해요')];
+    if (key === 'TALK') return [q, h('p', { class: 'story-sub' }, icon('messages-square'), ' 짝·모둠과 이야기 나눠요')];
     if (key === 'PRESENT') {
       return [
-        h('p', { class: 'story-q small' }, `❓ ${story.mainQuestion}`),
+        h('p', { class: 'story-q small' }, icon('circle-help'), ` ${story.mainQuestion}`),
         h('div', { class: 'picker' },
           h('label', { class: 'picker-size' }, '반 인원 ',
             h('input', {
@@ -101,25 +102,25 @@ export function mount(el, ctx) {
               'data-field': 'class-size', inputmode: 'numeric', 'aria-label': '반 인원',
               onInput: (e) => { sizeText = e.target.value; },
             }), '명'),
-          h('button', { class: 'btn btn-big btn-go', type: 'button', 'data-act': 'pick-number', onClick: onPick }, '🎲 번호 뽑기'),
+          h('button', { class: 'btn btn-big btn-go', type: 'button', 'data-act': 'pick-number', onClick: onPick }, icon('dices'), ' 번호 뽑기'),
           h('span', { class: 'picker-num', 'data-picked': picked === null ? '' : String(picked), 'aria-live': 'polite' },
             picked === null ? '?' : `${picked}번`),
         ),
-        h('p', { class: 'story-sub' }, '발표한 모둠은 별판에서 ★를 눌러 주세요'),
+        h('p', { class: 'story-sub' }, withIcons('발표한 모둠은 별판에서 ★를 눌러 주세요')),
       ];
     }
     return [
-      h('p', { class: 'story-sub' }, '🌱 생각을 넓혀요'),
+      h('p', { class: 'story-sub' }, icon('sprout'), ' 생각을 넓혀요'),
       h('ul', { class: 'story-follow' }, (story.followUpQuestions || []).map((f) => h('li', null, f))),
     ];
   }
 
   function extras() {
     const out = [];
-    if (showHint && story.hint) out.push(h('p', { class: 'story-hint' }, `💡 ${story.hint}`));
+    if (showHint && story.hint) out.push(h('p', { class: 'story-hint' }, icon('lightbulb'), ` ${story.hint}`));
     if (showIdeas && story.sampleIdeas?.length) {
       out.push(h('div', { class: 'story-ideas' },
-        h('p', { class: 'story-ideas-note' }, '🌱 예시 생각 (정답이 아니에요)'),
+        h('p', { class: 'story-ideas-note' }, icon('sprout'), ' 예시 생각 (정답이 아니에요)'),
         h('ul', null, story.sampleIdeas.map((s) => h('li', null, s)))));
     }
     return out;
@@ -136,7 +137,7 @@ export function mount(el, ctx) {
     const [, label] = STORY_STAGES[stage];
     const isLast = stage === STORY_STAGES.length - 1;
     timerSpan = h('span');
-    nextBtn = h('button', { class: 'btn btn-go', type: 'button', 'data-act': 'stage-next', disabled: isLast, onClick: onNext }, '다음 단계 ▶');
+    nextBtn = h('button', { class: 'btn btn-go', type: 'button', 'data-act': 'stage-next', disabled: isLast, onClick: onNext }, '다음 단계 ', icon('chevron-right'));
     fill(el,
       h('div', { class: 'story' },
         h('ol', { class: 'stages', 'aria-label': '이야기 단계' },
@@ -145,10 +146,10 @@ export function mount(el, ctx) {
         h('div', { class: 'story-body' }, stageBody(), extras()),
       ),
       h('div', { class: 'act-buttons' },
-        h('button', { class: 'btn', type: 'button', 'data-act': 'stage-prev', disabled: stage === 0, onClick: onPrev }, '◀ 이전 단계'),
-        story.hint ? h('button', { class: 'btn', type: 'button', 'data-act': 'hint', 'aria-pressed': String(showHint), onClick: () => { showHint = !showHint; render(); } }, '💡 힌트') : null,
-        story.sampleIdeas?.length ? h('button', { class: 'btn', type: 'button', 'data-act': 'ideas', 'aria-pressed': String(showIdeas), onClick: () => { showIdeas = !showIdeas; render(); } }, '🌱 예시 생각') : null,
-        h('button', { class: 'btn btn-ok', type: 'button', 'data-act': 'award-all', onClick: onAwardAll }, '모두 ★'),
+        h('button', { class: 'btn', type: 'button', 'data-act': 'stage-prev', disabled: stage === 0, onClick: onPrev }, icon('chevron-left'), ' 이전 단계'),
+        story.hint ? h('button', { class: 'btn', type: 'button', 'data-act': 'hint', 'aria-pressed': String(showHint), onClick: () => { showHint = !showHint; render(); } }, icon('lightbulb'), ' 힌트') : null,
+        story.sampleIdeas?.length ? h('button', { class: 'btn', type: 'button', 'data-act': 'ideas', 'aria-pressed': String(showIdeas), onClick: () => { showIdeas = !showIdeas; render(); } }, icon('sprout'), ' 예시 생각') : null,
+        h('button', { class: 'btn btn-ok', type: 'button', 'data-act': 'award-all', onClick: onAwardAll }, '모두 ', star()),
         nextBtn,
       ),
     );

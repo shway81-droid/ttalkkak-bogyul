@@ -468,6 +468,9 @@
 }
 
 .rules-title {
+  display: flex;
+  align-items: center;
+  gap: 0.25em;
   font-size: min(10.5vh, 6vw);
   font-weight: 900;
   line-height: 1.1;
@@ -557,9 +560,22 @@
   background: var(--accent);
 }
 
-.greet-icon {
-  font-size: max(4rem, min(13vh, 7vw));
+.greet-icon,
+.cele-icon {
+  display: grid;
+  place-items: center;
+  /* 예전 이모지(13vh)와 비슷한 높이 — 좁은 화면에서 인사 패널이 넘치지 않게 */
+  width: max(5rem, min(13.5vh, 7.5vw));
+  height: max(5rem, min(13.5vh, 7.5vw));
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  font-size: max(2.8rem, min(7.8vh, 4.4vw));
   line-height: 1;
+}
+
+.greet-icon .ic-star {
+  color: var(--star);
 }
 
 .greet-title {
@@ -615,10 +631,6 @@
   padding: 2vh 4vw 0;
 }
 
-.cele-icon {
-  font-size: 4.5rem;
-  line-height: 1;
-}
 
 .cele-total {
   font-size: 3rem;
@@ -1133,4 +1145,10 @@
   align-items: center;
   justify-content: center;
   gap: 1.4vh;
+}
+
+/* 규칙 안내 제목 앞 아이콘 */
+.rules-title .ic {
+  color: var(--accent-text);
+  vertical-align: 0;
 }

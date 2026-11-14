@@ -2,6 +2,7 @@
 // 인물 퀴즈(kind person)도 같은 진행이다. 문제 대신 사진을 크게 보여 주고, 정답이 나오면 사진 출처를 붙인다.
 // 모든 시간은 tick 으로만 줄인다(setTimeout 금지).
 import { h, fill } from '../ui/dom.js';
+import { icon, star } from '../ui/icons.js';
 import { WORD_TYPES, PERSON_TYPE } from '../core/wordTypes.js';
 
 export const DISCUSS_SEC = 10;
@@ -110,7 +111,7 @@ export function mount(el, ctx) {
     const sec = Math.max(0, Math.ceil(discussMs / 1000));
     let who;
     discussSpan = null;
-    if (mode === 'flash') who = h('div', { class: 'who who-ok', 'data-turn': String(turn) }, '⭕ 맞혔어요! ★ +1');
+    if (mode === 'flash') who = h('div', { class: 'who who-ok', 'data-turn': String(turn) }, icon('circle-check'), ' 맞혔어요! ', star(), ' +1');
     else if (mode === 'revealed') who = h('div', { class: 'who', 'data-turn': String(turn) }, '정답을 함께 확인해요');
     else {
       discussSpan = h('span', { 'data-discuss': String(sec) }, discussText(sec));
@@ -120,20 +121,20 @@ export function mount(el, ctx) {
     let buttons;
     if (mode === 'ask') {
       buttons = [
-        h('button', { class: 'btn btn-big', type: 'button', 'data-act': 'hint', disabled: !item.hint || hintShown, onClick: onHint }, '💡 힌트'),
+        h('button', { class: 'btn btn-big', type: 'button', 'data-act': 'hint', disabled: !item.hint || hintShown, onClick: onHint }, icon('lightbulb'), ' 힌트'),
         h('button', { class: 'btn btn-big', type: 'button', 'data-act': 'reveal', onClick: onReveal }, '정답 보기'),
-        h('button', { class: 'btn btn-big btn-ok', type: 'button', 'data-act': 'correct', onClick: onCorrect }, '⭕ 맞혔어요 (+★)'),
-        h('button', { class: 'btn btn-big btn-warn', type: 'button', 'data-act': 'pass', onClick: onPass }, '➡ 다음 모둠에게'),
+        h('button', { class: 'btn btn-big btn-ok', type: 'button', 'data-act': 'correct', onClick: onCorrect }, icon('circle-check'), ' 맞혔어요 (+', star(), ')'),
+        h('button', { class: 'btn btn-big btn-warn', type: 'button', 'data-act': 'pass', onClick: onPass }, icon('arrow-right'), ' 다음 모둠에게'),
       ];
     } else if (mode === 'revealed') {
-      buttons = [h('button', { class: 'btn btn-big btn-go', type: 'button', 'data-act': 'next-item', onClick: onNextItem }, '다음 문제 ▶')];
+      buttons = [h('button', { class: 'btn btn-big btn-go', type: 'button', 'data-act': 'next-item', onClick: onNextItem }, '다음 문제 ', icon('chevron-right'))];
     } else {
       buttons = [h('p', { class: 'teacher-note' }, isPerson ? '잠시 뒤 다음 인물이 나와요' : '잠시 뒤 다음 문제가 나와요')];
     }
 
     const tag = h('p', { class: 'word-tag' }, `${type.title}${item.topic ? ` · ${item.topic}` : ''}`);
     const ask = h('p', { class: 'word-ask' }, type.ask);
-    const hint = hintShown && mode === 'ask' ? h('p', { class: 'word-hint' }, `💡 ${item.hint}`) : null;
+    const hint = hintShown && mode === 'ask' ? h('p', { class: 'word-hint' }, icon('lightbulb'), ` ${item.hint}`) : null;
     const answer = mode !== 'ask' ? answerBlock() : null;
     const body = isPerson
       ? h('div', { class: 'word person' },
