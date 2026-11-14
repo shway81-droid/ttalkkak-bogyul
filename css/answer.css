@@ -1,0 +1,70 @@
+/* 선생님용 정답 창(answer.html) — 노트북 화면 한쪽에 작게 띄워 두고 흘끗 보는 창.
+   정답이 가장 크고, 나머지는 작게. 색은 수업 화면과 같은 밝은 톤. */
+:root {
+  --bg: #f4f6fa;
+  --panel: #ffffff;
+  --line: #dce1ec;
+  --text: #152447;
+  --muted: #55607a;
+  --accent: #ffb703;
+  --accent-soft: #fff4d6;
+  --accent-text: #a86a00;
+  --ok: #12a57c;
+  --ok-text: #0b7a5b;
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  padding: 16px 20px 20px;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Pretendard', 'Pretendard Variable', system-ui, -apple-system, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  line-height: 1.45;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+h1, p, ul, ol { margin: 0; }
+
+.head h1 { font-size: 20px; font-weight: 900; }
+.lead { margin-top: 4px; font-size: 14px; color: var(--muted); }
+
+.live {
+  margin-top: 14px;
+  background: var(--panel);
+  border: 2px solid var(--line);
+  border-radius: 16px;
+  padding: 18px 20px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.live:not([data-kind='idle']) { border-color: var(--accent); }
+
+.where { font-size: 13px; font-weight: 700; color: var(--muted); }
+.label { font-size: 15px; font-weight: 800; color: var(--accent-text); }
+.prompt { font-size: 22px; font-weight: 800; }
+.photo { width: 100%; max-height: 260px; object-fit: contain; border-radius: 12px; background: var(--bg); }
+.answer-label { margin-top: 6px; font-size: 13px; font-weight: 800; color: var(--muted); }
+.answer { font-size: clamp(32px, 9vw, 54px); font-weight: 900; line-height: 1.15; color: var(--ok-text); }
+.answer.story-q { font-size: 24px; color: var(--text); }
+.also, .note { font-size: 16px; color: var(--muted); }
+.hint { font-size: 15px; color: var(--accent-text); }
+.wait { font-size: 18px; font-weight: 700; color: var(--muted); padding: 18px 0; }
+
+.options { padding-left: 1.4em; font-size: 17px; display: grid; gap: 4px; }
+.options .correct { color: var(--ok-text); font-weight: 900; }
+
+.block { margin-top: 6px; background: var(--bg); border-radius: 12px; padding: 10px 14px; font-size: 15px; }
+.block-title { font-weight: 800; color: var(--muted); margin-bottom: 4px; }
+.block ul { padding-left: 1.2em; display: grid; gap: 3px; }
+
+.foot { margin-top: 14px; font-size: 13px; color: var(--muted); }
+
+.ic { display: inline-block; width: 1em; height: 1em; vertical-align: -0.14em; line-height: 0; }
+.ic svg { width: 100%; height: 100%; display: block; }

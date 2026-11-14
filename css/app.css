@@ -1179,3 +1179,81 @@
   color: var(--accent-text);
   vertical-align: 0;
 }
+
+/* ---------- 몸으로 말해요: 이번 차례에 맞힌 낱말 수 ---------- */
+.gesture-count {
+  font-size: max(1.3rem, min(4.4vh, 2.4vw));
+  font-weight: 900;
+  color: var(--accent-text);
+}
+
+/* ---------- 우리 반 별 목표 ----------
+   '우리 반 ★12/36' 칸 뒤에 채운 만큼 노란 막대(--goal-p 는 runner.js 가 정함) */
+.class-total {
+  position: relative;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  background:
+    linear-gradient(90deg, var(--accent) var(--goal-p, 0%), transparent var(--goal-p, 0%)),
+    var(--panel);
+  border: 2px solid var(--accent);
+  color: var(--accent-ink);
+}
+
+.class-total .ic-star {
+  color: var(--accent-ink);
+}
+
+.class-total .goal-of {
+  font-weight: 700;
+  font-size: 0.85em;
+  opacity: 0.75;
+}
+
+.class-total.goal-done {
+  background: var(--accent);
+}
+
+.goal-toast {
+  position: absolute;
+  top: 1.2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: max(1.4rem, min(5vh, 2.8vw));
+  font-weight: 900;
+  padding: 0.4em 1.2em;
+  border-radius: 999px;
+  box-shadow: 0 6px 0 rgba(21, 36, 71, 0.15);
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+/* ---------- 움직임 효과(js/ui/fx.js) ---------- */
+.fx-star {
+  position: fixed;
+  z-index: 50;
+  font-size: 2.2rem;
+  pointer-events: none;
+  filter: drop-shadow(0 2px 2px rgba(21, 36, 71, 0.25));
+}
+
+.fx-confetti {
+  position: fixed;
+  top: 0;
+  z-index: 60;
+  pointer-events: none;
+}
+
+/* 축하: 우리 반 별 목표 결과 한 줄 */
+.cele-goal {
+  font-size: max(1.3rem, min(4.2vh, 2.4vw));
+  font-weight: 800;
+  color: var(--muted);
+}
+
+.cele-goal.done {
+  color: var(--accent-text);
+}

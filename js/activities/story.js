@@ -155,6 +155,15 @@ export function mount(el, ctx) {
     );
     updateTimer();
     fitStory();
+    ctx.api.live?.({
+      kind: 'story',
+      label: `이야기 나누기 · ${STORY_STAGES[stage][1]}`,
+      prompt: story.title,
+      answer: story.mainQuestion,
+      list: story.followUpQuestions,
+      guide: story.teacherGuide,
+      ideas: story.sampleIdeas,
+    });
   }
 
   // 이야기 읽기 단계: 본문을 남은 자리에 들어가는 가장 큰 글자로(뒷자리에서도 읽히게).

@@ -69,6 +69,7 @@ export function mount(el, ctx) {
 
   const onPass = ctx.guard(() => {
     if (mode !== 'ask' || !ready()) return;
+    ctx.sfx.pass();
     ctx.api.passTurn();
     if (ctx.api.currentTurn() === originTurn) {
       // 모든 모둠이 한 번씩 기회를 가졌다 → 정답 공개
@@ -159,6 +160,22 @@ export function mount(el, ctx) {
         answer);
 
     fill(el, body, h('div', { class: 'act-buttons' }, buttons));
+    sendLive();
+  }
+
+  // 선생님용 정답 창에 지금 문제의 정답을 알린다(차례가 바뀌어도 다시 그리므로 함께 알려진다)
+  function sendLive() {
+    ctx.api.live?.({
+      kind: 'quiz',
+      label: isPerson ? PERSON_TYPE.title : (WORD_TYPES[item.type]?.title || '말놀이'),
+      topic: item.topic,
+      prompt: item.prompt,
+      photo: isPerson ? item.photo.file : null,
+      answer: item.answer,
+      also: item.also,
+      note: item.note,
+      hint: item.hint,
+    });
   }
 
   newItem();
@@ -168,7 +185,11 @@ export function mount(el, ctx) {
       if (mode === 'ask' && discussMs > 0) {
         const before = Math.ceil(discussMs / 1000);
         discussMs = Math.max(0, discussMs - dt);
-        if (Math.ceil(discussMs / 1000) !== before) updateDiscuss();
+        const now = Math.ceil(discussMs / 1000);
+        if (now !== before) {
+          updateDiscuss();
+          if (now >= 1 && now <= 3) ctx.sfx.tick?.();
+        }
       } else if (mode === 'flash') {
         flashMs -= dt;
         if (flashMs <= 0) newItem();

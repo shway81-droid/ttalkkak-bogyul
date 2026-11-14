@@ -6,6 +6,7 @@
 // 모든 파일을 한꺼번에 새로 받아 옛 파일과 새 파일이 섞이지 않는다.
 const ASSETS = [
   './index.html',
+  './answer.html',
   './credits.html',
   './print.html',
   './manifest.json',
@@ -313,6 +314,7 @@ const ASSETS = [
   './assets/people/person-392.webp',
   './assets/people/person-393.webp',
   './assets/people/person-394.webp',
+  './css/answer.css',
   './css/app.css',
   './css/base.css',
   './css/credits.css',
@@ -330,6 +332,7 @@ const ASSETS = [
   './js/activities/quizboard.js',
   './js/activities/story.js',
   './js/activities/word.js',
+  './js/answer.js',
   './js/core/data.js',
   './js/core/flows.js',
   './js/core/license.js',
@@ -343,15 +346,17 @@ const ASSETS = [
   './js/main.js',
   './js/print.js',
   './js/ui/dom.js',
+  './js/ui/fx.js',
   './js/ui/guard.js',
   './js/ui/icon-paths.js',
   './js/ui/icons.js',
+  './js/ui/live.js',
   './js/ui/runner.js',
   './js/ui/sfx.js',
   './js/ui/start.js',
 ];
 
-const CACHE = 'ttalkkak-bogyul-d369d8438405';
+const CACHE = 'ttalkkak-bogyul-d0d5787b880f';
 const PREFIX = 'ttalkkak-bogyul-';
 
 self.addEventListener('install', (event) => {

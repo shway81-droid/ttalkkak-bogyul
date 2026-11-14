@@ -1,6 +1,7 @@
 // 첫 화면: 학년 → 흐름 → 모둠 수 → [시작]. 고른 값은 저장하지 않는다.
 import { h, fill } from './dom.js';
 import { icon } from './icons.js';
+import { openAnswerWindow } from './live.js';
 import { FLOWS } from '../core/flows.js';
 
 const SLOT_COLOR = { greet: 'n', word: 'h', team: 'h', person: 'h', story: 'm', celebrate: 'n' };
@@ -29,6 +30,9 @@ export function renderStart(root, { sets, onStart, onPrint }) {
   );
   const startBtn = h('button', { class: 'btn btn-go', type: 'button', 'data-act': 'start', disabled: true, onClick: () => onStart({ ...sel }) }, icon('play', { fill: true }), ' 시작');
   const printHint = h('span', { class: 'print-hint', role: 'status' });
+  // 선생님용 실시간 정답 창: 수업 화면의 문제 정답을 노트북 화면에 미리 띄운다(js/ui/live.js)
+  const answerBtn = h('button', { class: 'print-link', type: 'button', 'data-act': 'open-answer', onClick: openAnswerWindow },
+    icon('eye'), ' 선생님용 정답 창 열기 (노트북 화면에 두면 정답을 미리 볼 수 있어요)');
   const printBtn = h('button', { class: 'print-link', type: 'button', 'data-act': 'print', onClick: printClick },
     icon('printer'), ' 화면을 못 쓰나요? 선생님용 진행 대본 인쇄');
 
@@ -72,7 +76,7 @@ export function renderStart(root, { sets, onStart, onPrint }) {
         h('h2', { class: 'pick-label' }, '모둠은 몇 개?'),
         h('div', { class: 'chips' }, teamBtns),
       ),
-      h('div', { class: 'start-bottom' }, h('div', { class: 'print-box' }, printBtn, printHint), startBtn),
+      h('div', { class: 'start-bottom' }, h('div', { class: 'print-box' }, answerBtn, printBtn, printHint), startBtn),
       h('footer', { class: 'credit' }, '문항·이야기·인물: 짬짬이 · ', h('a', { href: 'credits.html', 'data-act': 'credits' }, '인물 사진 출처')),
     ),
   );

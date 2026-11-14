@@ -109,6 +109,13 @@ export function mount(el, ctx) {
       ),
       h('div', { class: 'act-buttons quiz-buttons' }, buttons),
     );
+    ctx.api.live?.({
+      kind: 'choice',
+      label: '상식 퀴즈',
+      prompt: item.q,
+      answer: item.a,
+      options: options.map((o) => ({ text: o, correct: o === item.a })),
+    });
   }
 
   newItem();
@@ -118,7 +125,11 @@ export function mount(el, ctx) {
       if (mode !== 'ask' || discussMs <= 0) return;
       const before = Math.ceil(discussMs / 1000);
       discussMs = Math.max(0, discussMs - dt);
-      if (Math.ceil(discussMs / 1000) !== before) updateDiscuss();
+      const now = Math.ceil(discussMs / 1000);
+      if (now !== before) {
+        updateDiscuss();
+        if (now >= 1 && now <= 3) ctx.sfx.tick?.();
+      }
     },
     destroy() {},
   };

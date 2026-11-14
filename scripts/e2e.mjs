@@ -65,6 +65,14 @@ ACT_STEPS.story = async (page, { teams }) => {
 
 ACT_STEPS.person = ACT_STEPS.word;
 
+/** 규칙 안내가 나오면 [시작]을 누른다. 인사는 규칙 안내 없이 바로 활동이 열린다. 규칙 화면이었으면 true */
+export async function startIfRules(page) {
+  await page.locator('[data-view="rules"], [data-view="activity"]').first().waitFor();
+  if (!(await page.locator('[data-view="rules"]').count())) return false;
+  await click(page, 'start-step');
+  return true;
+}
+
 /** 세트를 열고 kind 순서의 활동 화면까지 바로 간다 */
 export async function openStep(page, base, { grade, flow = 'lively', teams = 6, kind }) {
   await open(page, base);
@@ -97,8 +105,7 @@ export async function runSet(page, { grade, flow, teams }, base) {
   let given = 0;
   const count = await page.locator('[data-act^="goto-"]').count();
   for (let i = 0; i < count; i++) {
-    await page.locator(act('start-step')).waitFor();
-    await click(page, 'start-step');
+    await startIfRules(page);
     await page.waitForTimeout(GUARD_WAIT); // 활동은 처음 400ms 누름을 무시한다
     const kind = await page.locator('[data-kind]').first().getAttribute('data-kind');
     if (ACT_STEPS[kind]) given += (await ACT_STEPS[kind](page, { grade, flow, teams })) || 0;
@@ -190,9 +197,11 @@ export async function sweepScreens(page, base, { grade, flow, teams }) {
       const bad = await overflowOf(page);
       if (bad) over.push(`g${grade}-${flow} ${i + 1}.${kind} ${name} (${bad})`);
     };
-    await page.locator(act('start-step')).waitFor();
-    await look('규칙');
-    await click(page, 'start-step');
+    await page.locator('[data-view="rules"], [data-view="activity"]').first().waitFor();
+    if (await page.locator('[data-view="rules"]').count()) {
+      await look('규칙');
+      await click(page, 'start-step');
+    }
     await page.waitForTimeout(GUARD_WAIT);
     await look('처음');
     if (SWEEP[kind]) await SWEEP[kind](page, look);
@@ -382,12 +391,39 @@ async function main() {
       await page.close();
     }
 
+    // 인사는 규칙 안내 없이 바로 패널(같은 말을 두 번 읽지 않게)
+    {
+      const page = await ctx.newPage();
+      await open(page, base);
+      await click(page, 'grade-2');
+      await click(page, 'start');
+      await page.locator('[data-kind="greet"]').waitFor();
+      check('인사: 규칙 안내 없이 바로 인사 패널', (await page.locator('[data-view="rules"]').count()) === 0);
+      await page.close();
+    }
+
+    // 선생님용 정답 창: 수업 화면에 나온 문제의 정답이 같은 브라우저의 다른 창에 뜬다
+    {
+      const answerPage = await ctx.newPage();
+      await open(answerPage, `${base}answer.html`);
+      const page = await ctx.newPage();
+      await openStep(page, base, { grade: 3, flow: 'lively', teams: 6, kind: 'word' });
+      const before = await answerPage.locator('[data-answer]').innerText({ timeout: 3000 }).catch(() => '');
+      await click(page, 'reveal');
+      await page.waitForTimeout(GUARD_WAIT);
+      const shown = (await page.locator('.word-answer-main strong').innerText()).trim();
+      check('정답 창: 문제가 나오자마자(정답 공개 전) 수업 화면과 같은 정답이 뜸', before.trim() === shown, `${before.trim()} / ${shown}`);
+      await page.close();
+      await answerPage.close();
+    }
+
     // 규칙 안내 본문 글자: 1920×1080 에서 32px 이상(교실 뒷자리)
     {
       const page = await ctx.newPage();
       await open(page, base);
       await click(page, 'grade-6');
       await click(page, 'start');
+      await click(page, 'goto-1'); // 첫 순서(인사)는 규칙 안내 없이 바로 시작하므로 두 번째 순서에서 잰다
       const px = await page.locator('.rules-lines li').first().evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
       check('규칙 안내 본문 글자 32px 이상(1920×1080)', px >= 32, `${px}px`);
       await page.close();
@@ -542,7 +578,12 @@ async function main() {
       await page.locator(act('correct')).dblclick();
       await page.waitForTimeout(100);
       check('몸으로 말해요: [맞혔어요] 두 번 눌러도 별 +1', (await totalStars(page)) === t0 + 1);
-      check('몸으로 말해요: 맞히면 다음 모둠 준비 화면', (await page.locator(act('show-word')).isVisible()) && (await page.locator('[data-word]').count()) === 0);
+      check('몸으로 말해요: 맞히면 같은 모둠이 다음 낱말을 이어 감', (await page.locator(act('show-word')).count()) === 0 && (await page.locator('[data-word]').innerText()).trim() !== word && (await page.locator('[data-count]').getAttribute('data-count')) === '1');
+      await page.waitForTimeout(GUARD_WAIT);
+      await click(page, 'end-round');
+      await page.waitForTimeout(100);
+      check('몸으로 말해요: [차례 끝] → 결과 한 줄과 다음 모둠 준비 화면', (await page.locator(act('show-word')).isVisible()) && (await page.locator('[data-word]').count()) === 0 && (await page.locator('.gesture-last').innerText()).includes('1개 맞혔어요'));
+      check('몸으로 말해요: 다음 모둠으로 차례가 넘어감', (await page.locator('.team.turn').getAttribute('data-team')) === '1');
       await page.close();
     }
 
@@ -612,7 +653,7 @@ async function main() {
         await click(page, 'grade-1');
         await click(page, 'flow-lively');
         await click(page, 'start');
-        await click(page, 'start-step');
+        await page.locator('[data-kind]').first().waitFor();
         const firstKind = await page.locator('[data-kind]').first().getAttribute('data-kind');
         check('오프라인: g1-lively 첫 순서가 뜸', firstKind === 'greet', String(firstKind));
         await page.locator('[data-step-kind="person"]').click();

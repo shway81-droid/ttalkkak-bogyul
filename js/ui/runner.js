@@ -6,12 +6,18 @@ import * as S from '../core/session.js';
 import { rulesFor } from '../core/rules.js';
 import { ACTIVITIES, STEP_ICON } from '../activities/index.js';
 import { icon, star, withIcons } from './icons.js';
+import { flyStar, bump, confetti } from './fx.js';
+import { LIVE_CHANNEL, openAnswerWindow } from './live.js';
 
 const TICK_MS = 200;
 // 차례가 있는 놀이에서만 별판의 차례 모둠을 강조한다.
 const TURN_KINDS = new Set(['word', 'gesture', 'person']);
 // 축하 순서에서는 모둠별 별을 나란히 보여 주지 않는다(우리 반 합계만 — 모둠끼리 비교하지 않게).
 const CLASS_ONLY_KINDS = new Set(['celebrate']);
+// 규칙 안내 없이 바로 활동으로 가는 순서(인사는 패널이 곧 안내라 같은 말을 두 번 읽지 않게).
+const NO_RULES_KINDS = new Set(['greet']);
+/** 우리 반 별 목표: 모둠 수 × 6 (6모둠이면 36개 — 40분 동안 보통 넘을 만큼) */
+export const goalFor = (teamCount) => teamCount * 6;
 
 export function runSession(root, { plan, teamCount, sfx, onExit }) {
   const state = S.createSession(plan, teamCount);
@@ -20,11 +26,32 @@ export function runSession(root, { plan, teamCount, sfx, onExit }) {
   let overtimeNotified = false;
   let last = performance.now();
   let modal = null;
+  const goal = goalFor(teamCount);
+  let goalDone = false;
+
+  // ---- 선생님용 정답 창(answer.html)으로 지금 화면을 알린다 -------------------------
+  // 같은 브라우저의 두 창끼리 BroadcastChannel 로 — 서버도 인터넷도 필요 없다.
+  const live = typeof BroadcastChannel === 'function' ? new BroadcastChannel(LIVE_CHANNEL) : null;
+  let lastLive = { kind: 'idle' };
+  function liveSend(info) {
+    const step = plan.steps[state.stepIndex];
+    lastLive = { ...info, set: plan.title, stepNo: state.stepIndex + 1, stepTitle: step?.title, turn: state.turn };
+    try {
+      live?.postMessage(lastLive);
+    } catch {
+      /* 창이 없어도 수업은 계속된다 */
+    }
+  }
+  if (live) live.onmessage = (e) => { if (e.data?.kind === 'hello') liveSend(lastLive); };
 
   // [다음 순서] 버튼과 → 키가 같은 막기를 쓴다(빠른 두 번 누름 → 한 칸만).
   const guardedNext = guard(nextStep);
   // 별판 [+]·[−]도 모둠마다 막는다. 칩은 누를 때마다 새로 그려지므로 막기는 칩 밖에 둔다.
-  const addStar = Array.from({ length: teamCount }, (_, t) => guard(() => { S.addStar(state, t); starsChanged(); }));
+  const addStar = Array.from({ length: teamCount }, (_, t) => guard(() => {
+    S.addStar(state, t);
+    starsChanged();
+    bump(teamsEl.querySelector(`[data-team="${t}"]`));
+  }));
   const removeStar = Array.from({ length: teamCount }, (_, t) => guard(() => { S.removeStar(state, t); starsChanged(); }));
 
   // ---- 위쪽 띠 --------------------------------------------------------------
@@ -38,12 +65,14 @@ export function runSession(root, { plan, teamCount, sfx, onExit }) {
   const muteBtn = h('button', { class: 'icon-btn', type: 'button', 'data-act': 'mute', onClick: toggleMute });
   const fsBtn = h('button', { class: 'icon-btn', type: 'button', 'data-act': 'fullscreen', title: '전체화면', 'aria-label': '전체화면', onClick: toggleFullscreen }, icon('maximize'));
   const nextBtn = h('button', { class: 'next-btn', type: 'button', 'data-act': 'next-step', onClick: guardedNext }, '다음 순서 ', icon('chevron-right'));
+  const answerBtn = h('button', { class: 'icon-btn', type: 'button', 'data-act': 'answer-window', title: '선생님용 정답 창 열기 (노트북 화면에)', 'aria-label': '선생님용 정답 창 열기', onClick: openAnswerWindow }, icon('eye'));
   const exitBtn = h('button', { class: 'icon-btn', type: 'button', 'data-act': 'exit', title: '끝내기', 'aria-label': '끝내기', onClick: openExit }, icon('x'));
   const pausedBadge = h('div', { class: 'paused-badge', hidden: true }, icon('pause'), ' 잠깐 멈췄어요');
 
   // ---- 별판 -----------------------------------------------------------------
   const teamsEl = h('div', { class: 'teams' });
-  const totalEl = h('span', { class: 'class-total', 'data-total': '0' });
+  const totalEl = h('span', { class: 'class-total', 'data-total': '0', 'data-goal': String(goal), title: `우리 반 별 목표 ${goal}개` });
+  const goalToast = h('div', { class: 'goal-toast', hidden: true, role: 'status' }, icon('trophy'), ` 우리 반 별 목표 ${goal}개 달성!`);
   const undoBtn = h('button', { class: 'tool-btn', type: 'button', 'data-act': 'undo', title: '마지막 별 되돌리기', onClick: undo }, icon('undo-2'), ' 되돌리기');
 
   const stage = h('div', { class: 'stage' });
@@ -52,10 +81,10 @@ export function runSession(root, { plan, teamCount, sfx, onExit }) {
     h('header', { class: 'strip' },
       h('span', { class: 'strip-title' }, plan.title),
       h('nav', { class: 'pills', 'aria-label': '순서' }, pills),
-      timerEl, pauseBtn, muteBtn, fsBtn, nextBtn, exitBtn,
+      timerEl, pauseBtn, muteBtn, answerBtn, fsBtn, nextBtn, exitBtn,
     ),
     h('section', { class: 'board', 'aria-label': '모둠 별판' }, teamsEl, h('div', { class: 'board-tools' }, totalEl, undoBtn)),
-    h('div', { class: 'stage-wrap' }, stage, pausedBadge),
+    h('div', { class: 'stage-wrap' }, stage, pausedBadge, goalToast),
     h('footer', { class: 'credit credit-small' }, '문항·이야기·인물: 짬짬이'),
   );
   fill(root, shell);
@@ -64,8 +93,13 @@ export function runSession(root, { plan, teamCount, sfx, onExit }) {
   const api = {
     awardTurn() {
       const t = S.awardTurn(state);
-      starsChanged();
+      starsChanged([t]);
       return t;
+    },
+    /** 차례는 그대로 두고 그 모둠에 별 하나(몸으로 말해요: 1분 동안 맞힌 만큼) */
+    addStar(team) {
+      S.addStar(state, team);
+      starsChanged([team]);
     },
     passTurn() {
       S.passTurn(state);
@@ -73,12 +107,15 @@ export function runSession(root, { plan, teamCount, sfx, onExit }) {
     },
     awardTeams(teams) {
       S.awardTeams(state, teams);
-      starsChanged();
+      starsChanged(teams);
     },
     awardAll() {
       S.awardAll(state);
-      starsChanged();
+      starsChanged(state.stars.map((_, i) => i));
     },
+    /** 정답 창에 지금 문제를 알린다(활동이 문제를 바꿀 때마다 부름) */
+    live: (info) => liveSend(info),
+    goal,
     currentTurn: () => state.turn,
     home: () => finish(),
   };
@@ -130,17 +167,38 @@ export function runSession(root, { plan, teamCount, sfx, onExit }) {
     }));
     const total = S.totalStars(state);
     totalEl.setAttribute('data-total', String(total));
-    totalEl.replaceChildren('우리 반 ', star(), String(total));
+    totalEl.replaceChildren('우리 반 ', star(), String(total), h('span', { class: 'goal-of' }, `/${goal}`));
+    // 목표까지 채운 만큼 칸 뒤에 노란 막대
+    totalEl.style.setProperty('--goal-p', `${Math.min(100, (total / goal) * 100)}%`);
+    totalEl.classList.toggle('goal-done', total >= goal);
     undoBtn.disabled = state.log.length === 0;
   }
 
-  function starsChanged() {
+  // gained: 방금 별을 받은 모둠들(활동에서 준 별은 화면 가운데에서 그 모둠 칩으로 날아간다)
+  function starsChanged(gained = []) {
     renderBoard();
     activity?.onStars?.();
+    gained.forEach((t, k) => flyStar(stage, teamsEl.querySelector(`[data-team="${t}"]`) || totalEl, k * 70));
+    checkGoal();
+  }
+
+  function checkGoal() {
+    if (goalDone || S.totalStars(state) < goal) return;
+    goalDone = true;
+    sfx.fanfare();
+    confetti();
+    goalToast.hidden = false;
+    setTimeout(() => { goalToast.hidden = true; }, 3200);
   }
 
   function renderRules() {
     const step = plan.steps[state.stepIndex];
+    if (NO_RULES_KINDS.has(step.kind)) {
+      liveSend({ kind: 'idle', message: `${step.title} 중이에요` });
+      startStep();
+      return;
+    }
+    liveSend({ kind: 'idle', message: `${step.title} 규칙 안내 중이에요` });
     const { lines, prep } = rulesFor(step.kind, plan.band);
     fill(stage,
       h('section', { class: 'rules', 'data-view': 'rules' },
@@ -284,6 +342,8 @@ export function runSession(root, { plan, teamCount, sfx, onExit }) {
     document.removeEventListener('keydown', onKey);
     window.removeEventListener('beforeunload', onBeforeUnload);
     destroyActivity();
+    liveSend({ kind: 'idle', message: '수업이 끝났어요' });
+    live?.close();
     onExit();
   }
 

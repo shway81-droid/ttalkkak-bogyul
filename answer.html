@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>선생님용 정답 창 · 딸깍 보결</title>
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#f4f6fa">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/fonts.css">
+  <link rel="stylesheet" href="css/answer.css">
+</head>
+<body>
+  <!-- 선생님용 실시간 정답 창: 수업 화면이 BroadcastChannel 로 알려 주는 지금 문제의 정답을 띄운다(js/answer.js).
+       아이들에게 보이지 않게 노트북 화면(확장 화면)에 둔다. -->
+  <header class="head">
+    <h1>선생님용 정답 창</h1>
+    <p class="lead">수업 화면에 나온 문제의 정답이 여기에 바로 떠요. 아이들에게 보이지 않게 <strong>노트북 화면</strong>에 두세요.</p>
+  </header>
+  <main id="live" class="live" data-kind="idle" aria-live="polite">
+    <p class="where" id="where"></p>
+    <p class="wait" id="wait">딸깍 보결 화면에서 수업을 시작하면 정답이 여기에 떠요.</p>
+  </main>
+  <p class="foot">TV를 '복제' 화면으로 쓰면 이 창도 아이들에게 보여요. 화면이 하나뿐이면 [진행 대본 인쇄]를 써 주세요.</p>
+  <script type="module" src="js/answer.js"></script>
+</body>
+</html>
