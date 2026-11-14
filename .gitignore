@@ -3,3 +3,4 @@ node_modules/
 .superpowers/
 test-results/
 dist/
+.DS_Store

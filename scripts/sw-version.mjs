@@ -36,6 +36,8 @@ const DIRS = ['assets', 'css', 'data', 'js'];
 function walk(root, dir) {
   const out = [];
   for (const name of readdirSync(dir).sort()) {
+    // .DS_Store 같은 숨은 파일은 저장소에 없으니 넣지 않는다(넣으면 배포된 사이트에서 404 → 오프라인 사본 실패)
+    if (name.startsWith('.')) continue;
     const p = join(dir, name);
     if (statSync(p).isDirectory()) out.push(...walk(root, p));
     else out.push(`./${relative(root, p).split(sep).join('/')}`);

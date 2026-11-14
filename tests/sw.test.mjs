@@ -21,6 +21,7 @@ function readAssets() {
 function walk(dir) {
   const out = [];
   for (const name of readdirSync(dir)) {
+    if (name.startsWith('.')) continue; // .DS_Store 같은 숨은 파일은 저장소에 없다
     const p = join(dir, name);
     if (statSync(p).isDirectory()) out.push(...walk(p));
     else out.push(`./${relative(ROOT, p).split(sep).join('/')}`);
