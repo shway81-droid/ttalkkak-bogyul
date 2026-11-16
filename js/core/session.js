@@ -47,9 +47,12 @@ export function togglePause(s) {
   s.paused = !s.paused;
 }
 
+// 기록마다 별을 받기 전 차례(prevTurn)와 받은 뒤 차례(afterTurn)를 둔다.
 function apply(s, teams, delta) {
-  s.log.push({ teams: teams.slice(), delta, prevTurn: s.turn });
+  const entry = { teams: teams.slice(), delta, prevTurn: s.turn, afterTurn: s.turn };
+  s.log.push(entry);
   for (const t of teams) s.stars[t] = Math.max(0, s.stars[t] + delta);
+  return entry;
 }
 
 const nextTurn = (s) => {
@@ -68,8 +71,9 @@ export function removeStar(s, team) {
 /** 차례 모둠에 별 하나, 차례를 다음으로. 별을 받은 모둠 번호를 돌려준다 */
 export function awardTurn(s) {
   const team = s.turn;
-  apply(s, [team], 1);
+  const entry = apply(s, [team], 1);
   nextTurn(s);
+  entry.afterTurn = s.turn;
   return team;
 }
 
@@ -86,12 +90,15 @@ export function awardAll(s) {
   awardTeams(s, s.stars.map((_, i) => i));
 }
 
-/** 마지막 별 기록 하나를 되돌린다. 차례도 그 기록 전으로. */
+/**
+ * 마지막 별 기록 하나를 되돌린다. 차례는 그 별로 바뀐 차례가 그대로일 때만 그 기록 전으로 돌린다
+ * (그 뒤에 [다음 모둠에게]로 넘긴 차례는 실제로 있었던 일이라 그대로 둔다).
+ */
 export function undo(s) {
   const last = s.log.pop();
   if (!last) return false;
   for (const t of last.teams) s.stars[t] = Math.max(0, s.stars[t] - last.delta);
-  s.turn = last.prevTurn;
+  if (s.turn === last.afterTurn) s.turn = last.prevTurn;
   return true;
 }
 

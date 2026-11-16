@@ -58,7 +58,19 @@ export function mount(el, ctx) {
     ctx.sfx.correct();
   });
 
+  // 켜고 끄는 버튼이라 두 번 누르면 켜졌다 바로 꺼진다 → 막는다
+  const onHintToggle = ctx.guard(() => {
+    showHint = !showHint;
+    render();
+  });
+  const onIdeasToggle = ctx.guard(() => {
+    showIdeas = !showIdeas;
+    render();
+  });
+
   function readSize(input) {
+    // 칸을 비우거나 숫자가 아니면 앞 값을 그대로 쓴다
+    if (!String(input.value).trim()) return classSize;
     const n = Math.round(Number(input.value));
     if (!Number.isFinite(n)) return classSize;
     return Math.max(CLASS_SIZE.min, Math.min(CLASS_SIZE.max, n));
@@ -77,6 +89,7 @@ export function mount(el, ctx) {
       if (pool.length > 1 && pool[pool.length - 1] === picked) [pool[0], pool[pool.length - 1]] = [pool[pool.length - 1], pool[0]];
     }
     picked = pool.pop();
+    sizeText = String(classSize); // 비웠거나 범위 밖이던 칸에 실제로 쓴 인원을 다시 보여 준다
     render();
   });
 
@@ -147,8 +160,8 @@ export function mount(el, ctx) {
       ),
       h('div', { class: 'act-buttons' },
         h('button', { class: 'btn', type: 'button', 'data-act': 'stage-prev', disabled: stage === 0, onClick: onPrev }, icon('chevron-left'), ' 이전 단계'),
-        story.hint ? h('button', { class: 'btn', type: 'button', 'data-act': 'hint', 'aria-pressed': String(showHint), onClick: () => { showHint = !showHint; render(); } }, icon('lightbulb'), ' 힌트') : null,
-        story.sampleIdeas?.length ? h('button', { class: 'btn', type: 'button', 'data-act': 'ideas', 'aria-pressed': String(showIdeas), onClick: () => { showIdeas = !showIdeas; render(); } }, icon('sprout'), ' 예시 생각') : null,
+        story.hint ? h('button', { class: 'btn', type: 'button', 'data-act': 'hint', 'aria-pressed': String(showHint), onClick: onHintToggle }, icon('lightbulb'), ' 힌트') : null,
+        story.sampleIdeas?.length ? h('button', { class: 'btn', type: 'button', 'data-act': 'ideas', 'aria-pressed': String(showIdeas), onClick: onIdeasToggle }, icon('sprout'), ' 예시 생각') : null,
         h('button', { class: 'btn btn-ok', type: 'button', 'data-act': 'award-all', onClick: onAwardAll }, '모두 ', star()),
         nextBtn,
       ),

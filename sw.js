@@ -1,9 +1,12 @@
 // 서비스 워커: 한 번 열면 인터넷이 끊겨도 쓸 수 있게 화면에 필요한 파일을 모두 담아 둔다.
-// 요청은 담아 둔 것으로 먼저 답하고, 뒤에서 새로 받아 갈아 끼운다(stale-while-revalidate).
-// ASSETS 와 CACHE 는 `npm run stamp` 가 쓴다. 화면 파일을 더하거나 빼거나 바꾸면 다시 돌린다
-// (tests/sw.test.mjs 가 알려 준다). CACHE 이름 끝은 ASSETS 파일 내용의 해시다.
-// 그러면 배포 뒤 이 파일이 바뀌어 브라우저가 서비스 워커를 새로 설치하고,
-// 모든 파일을 한꺼번에 새로 받아 옛 파일과 새 파일이 섞이지 않는다.
+// 화면 파일(ASSETS)과 인물 사진(PHOTOS)은 캐시를 따로 쓴다.
+// - 화면 파일: 담아 둔 것으로 먼저 답하고 뒤에서 새로 받아 갈아 끼운다(stale-while-revalidate).
+//   설치할 때 한꺼번에 받는다(addAll — 하나라도 실패하면 설치 실패, 옛 파일과 새 파일이 섞이지 않게).
+// - 인물 사진: 내용이 바뀌면 사진 캐시 이름이 바뀌므로 담아 둔 것을 그대로 쓴다(cache-first).
+//   한 장씩 받아 실패한 사진만 빠지고(불안정한 와이파이에서도 설치는 됨), 빠진 사진은 다음에 열 때 다시 받는다.
+//   화면 파일만 바뀐 배포에서는 사진 캐시 이름이 그대로라 사진(약 3MB)을 다시 받지 않는다.
+// ASSETS·PHOTOS·CACHE·PHOTO_CACHE 는 `npm run stamp` 가 쓴다. 화면 파일·사진을 더하거나 빼거나 바꾸면 다시 돌린다
+// (tests/sw.test.mjs 가 알려 준다). 캐시 이름 끝은 각 목록 파일 내용의 해시다.
 const ASSETS = [
   './index.html',
   './answer.html',
@@ -15,6 +18,51 @@ const ASSETS = [
   './assets/fonts/PretendardVariable.subset.woff2',
   './assets/fonts/coverage.txt',
   './assets/icons/LICENSE.txt',
+  './css/answer.css',
+  './css/app.css',
+  './css/base.css',
+  './css/credits.css',
+  './css/fonts.css',
+  './css/print.css',
+  './data/people.json',
+  './data/quiz.json',
+  './data/sets.json',
+  './data/stories.json',
+  './data/words.json',
+  './js/activities/celebrate.js',
+  './js/activities/gesture.js',
+  './js/activities/greet.js',
+  './js/activities/index.js',
+  './js/activities/quizboard.js',
+  './js/activities/story.js',
+  './js/activities/word.js',
+  './js/answer.js',
+  './js/core/data.js',
+  './js/core/flows.js',
+  './js/core/license.js',
+  './js/core/plan.js',
+  './js/core/rng.js',
+  './js/core/rules.js',
+  './js/core/script.js',
+  './js/core/session.js',
+  './js/core/wordTypes.js',
+  './js/credits.js',
+  './js/main.js',
+  './js/print.js',
+  './js/single.js',
+  './js/ui/dom.js',
+  './js/ui/fx.js',
+  './js/ui/guard.js',
+  './js/ui/icon-paths.js',
+  './js/ui/icons.js',
+  './js/ui/live.js',
+  './js/ui/pages.js',
+  './js/ui/runner.js',
+  './js/ui/sfx.js',
+  './js/ui/start.js',
+];
+
+const PHOTOS = [
   './assets/people/person-001.webp',
   './assets/people/person-002.webp',
   './assets/people/person-003.webp',
@@ -314,66 +362,47 @@ const ASSETS = [
   './assets/people/person-392.webp',
   './assets/people/person-393.webp',
   './assets/people/person-394.webp',
-  './css/answer.css',
-  './css/app.css',
-  './css/base.css',
-  './css/credits.css',
-  './css/fonts.css',
-  './css/print.css',
-  './data/people.json',
-  './data/quiz.json',
-  './data/sets.json',
-  './data/stories.json',
-  './data/words.json',
-  './js/activities/celebrate.js',
-  './js/activities/gesture.js',
-  './js/activities/greet.js',
-  './js/activities/index.js',
-  './js/activities/quizboard.js',
-  './js/activities/story.js',
-  './js/activities/word.js',
-  './js/answer.js',
-  './js/core/data.js',
-  './js/core/flows.js',
-  './js/core/license.js',
-  './js/core/plan.js',
-  './js/core/rng.js',
-  './js/core/rules.js',
-  './js/core/script.js',
-  './js/core/session.js',
-  './js/core/wordTypes.js',
-  './js/credits.js',
-  './js/main.js',
-  './js/print.js',
-  './js/single.js',
-  './js/ui/dom.js',
-  './js/ui/fx.js',
-  './js/ui/guard.js',
-  './js/ui/icon-paths.js',
-  './js/ui/icons.js',
-  './js/ui/live.js',
-  './js/ui/pages.js',
-  './js/ui/runner.js',
-  './js/ui/sfx.js',
-  './js/ui/start.js',
 ];
 
-const CACHE = 'ttalkkak-bogyul-a30259914f36';
+const CACHE = 'ttalkkak-bogyul-6746b8019643';
+const PHOTO_CACHE = 'ttalkkak-bogyul-photos-95525a0fc9aa';
 const PREFIX = 'ttalkkak-bogyul-';
+const KEEP = [CACHE, PHOTO_CACHE];
+
+const abs = (u) => new URL(u, self.location).href;
+// 브라우저 HTTP 캐시(GitHub Pages 는 10분)를 거치지 않고 서버에서 새로 받는다
+const reload = (u) => new Request(abs(u), { cache: 'reload' });
+
+/** 사진 캐시에 아직 없는 사진만 한 장씩 받는다. 실패한 사진은 건너뛴다(다음에 열 때 다시). 받은 장수를 돌려준다.
+ *  이미 받는 중이면 같은 작업을 기다린다(설치 중에 화면을 열어도 같은 사진을 두 번 받지 않게). */
+let filling = null;
+function fillPhotos() {
+  if (!filling) filling = fillMissingPhotos().finally(() => { filling = null; });
+  return filling;
+}
+
+async function fillMissingPhotos() {
+  const cache = await caches.open(PHOTO_CACHE);
+  const have = new Set((await cache.keys()).map((r) => r.url));
+  const missing = PHOTOS.filter((u) => !have.has(abs(u)));
+  const done = await Promise.allSettled(missing.map((u) => cache.add(reload(u))));
+  return done.filter((d) => d.status === 'fulfilled').length;
+}
+
+async function install() {
+  const cache = await caches.open(CACHE);
+  await cache.addAll(ASSETS.map(reload));
+  await fillPhotos();
+}
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE)
-      // 브라우저 HTTP 캐시(GitHub Pages 는 10분)를 거치지 않고 서버에서 새로 받는다
-      .then((cache) => cache.addAll(ASSETS.map((u) => new Request(new URL(u, self.location), { cache: 'reload' }))))
-      .then(() => self.skipWaiting()),
-  );
+  event.waitUntil(install().then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => k.startsWith(PREFIX) && k !== CACHE).map((k) => caches.delete(k))))
+      .then((keys) => Promise.all(keys.filter((k) => k.startsWith(PREFIX) && !KEEP.includes(k)).map((k) => caches.delete(k))))
       .then(() => self.clients.claim()),
   );
 });
@@ -387,9 +416,10 @@ function cacheKey(request) {
   return url.href;
 }
 
-async function staleWhileRevalidate(event) {
+const PHOTO_KEYS = new Set(PHOTOS.map(abs));
+
+async function staleWhileRevalidate(event, key) {
   const cache = await caches.open(CACHE);
-  const key = cacheKey(event.request);
   const cached = await cache.match(key);
   const fresh = fetch(event.request)
     .then((res) => {
@@ -405,10 +435,27 @@ async function staleWhileRevalidate(event) {
   return res || Response.error();
 }
 
+async function cacheFirst(event, key) {
+  const cache = await caches.open(PHOTO_CACHE);
+  const cached = await cache.match(key);
+  if (cached) return cached;
+  const res = await fetch(event.request).catch(() => null);
+  if (!res) return Response.error();
+  if (res.ok && res.type === 'basic') event.waitUntil(cache.put(key, res.clone()));
+  return res;
+}
+
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   if (request.method !== 'GET') return;
   // 다른 출처 요청은 건드리지 않는다.
   if (new URL(request.url).origin !== self.location.origin) return;
-  event.respondWith(staleWhileRevalidate(event));
+  const key = cacheKey(request);
+  if (PHOTO_KEYS.has(key)) {
+    event.respondWith(cacheFirst(event, key));
+    return;
+  }
+  // 화면을 열 때마다 설치 때 받지 못한 사진을 뒤에서 마저 받는다(인터넷이 끊겨 있으면 그냥 실패).
+  if (request.mode === 'navigate') event.waitUntil(fillPhotos().catch(() => 0));
+  event.respondWith(staleWhileRevalidate(event, key));
 });

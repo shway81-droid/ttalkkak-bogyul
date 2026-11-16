@@ -14,11 +14,31 @@ const PRINT_MARGIN = { top: '12mm', right: '12mm', bottom: '12mm', left: '12mm' 
 const act = (name) => `[data-act="${name}"]`;
 
 const leaveOk = new WeakSet();
+
+// 가끔 한 번 멈추는 문제(첫 화면이 30초 안에 안 뜸, 원인 모름)를 다시 만나면 원인을 볼 수 있게
+// 페이지마다 콘솔 오류·실패한 요청·서비스 워커 상태를 최근 80줄까지 모아 두고, 검사가 예외로 멈추면 찍는다.
+const trail = [];
+function note(line) {
+  trail.push(`${new Date().toISOString().slice(11, 23)} ${line}`);
+  if (trail.length > 80) trail.shift();
+}
+const traced = new WeakSet();
+function trace(page) {
+  if (traced.has(page)) return;
+  traced.add(page);
+  page.on('console', (m) => { if (m.type() === 'error' || m.type() === 'warning') note(`[console.${m.type()}] ${m.text()}`); });
+  page.on('pageerror', (e) => note(`[pageerror] ${e}`));
+  page.on('requestfailed', (r) => note(`[requestfailed] ${r.url()} ${r.failure()?.errorText || ''}`));
+  page.on('response', (r) => { if (r.status() >= 400) note(`[http ${r.status()}] ${r.url()}`); });
+  page.on('framenavigated', (f) => { if (f === page.mainFrame()) note(`[navigated] ${f.url()}`); });
+}
 /**
  * 페이지를 연다. 수업 중인 페이지에서 옮기면 브라우저가 '사이트에서 나가시겠습니까?'를 묻는데(의도된 동작),
  * 검사에서는 '나가기'를 고른다. (떠나기 확인 자체는 LIVE_CHECKS.leaveGuard 가 따로 본다)
  */
 export async function open(page, url) {
+  trace(page);
+  note(`[open] ${url}`);
   if (!leaveOk.has(page)) {
     leaveOk.add(page);
     page.on('dialog', (d) => (d.type() === 'beforeunload' ? d.accept() : d.dismiss()).catch(() => {}));
@@ -356,6 +376,130 @@ export async function checkPerson(ctx, base, check) {
   await cp.close();
 }
 
+/** 미뤄 둔 작은 문제(2026-11-16)를 고친 것 */
+export const FIX_CHECKS = {
+  // 1280×720: 가장 긴 사진 출처 줄도 잘리지 않고, 출처가 나타날 때 사진 크기가 그대로
+  async creditLine(browser, base, check) {
+    const sctx = await browser.newContext({ viewport: { width: 1280, height: 720 } });
+    try {
+      const page = await sctx.newPage();
+      await openStep(page, base, { grade: 5, flow: 'lively', teams: 8, kind: 'person' });
+      const photo = page.locator('[data-photo]');
+      await photoWidth(photo);
+      const h0 = (await photo.boundingBox()).height;
+      await click(page, 'reveal');
+      await page.waitForTimeout(GUARD_WAIT);
+      const h1 = (await photo.boundingBox()).height;
+      check('1280×720 인물 퀴즈: 사진 출처가 나타나도 사진 크기 그대로', Math.abs(h1 - h0) < 1, `${h0} → ${h1}`);
+      const people = JSON.parse(readFileSync(new URL('../data/people.json', import.meta.url), 'utf8')).people;
+      const longest = people.map((p) => `사진: ${p.photo.license} · ${p.photo.author}`).sort((a, b) => b.length - a.length)[0];
+      const clipped = await page.locator('[data-credit]').evaluate((el, text) => {
+        el.textContent = text;
+        return el.scrollHeight > el.clientHeight + 1 || el.scrollWidth > el.clientWidth + 1;
+      }, longest);
+      check('1280×720 인물 퀴즈: 가장 긴 사진 출처 줄도 잘리지 않음(라이선스가 앞)', !clipped && /^사진: (CC|Public|공공|퍼블릭)/.test(longest), longest);
+    } finally {
+      await sctx.close();
+    }
+  },
+
+  // 사진을 읽지 못하면 빈 칸 대신 알림 + 힌트가 저절로 열림
+  async brokenPhoto(browser, base, check) {
+    const bctx = await browser.newContext({ viewport: { width: 1920, height: 1080 }, serviceWorkers: 'block' });
+    try {
+      await bctx.route('**/assets/people/**', (r) => r.abort());
+      const page = await bctx.newPage();
+      await openStep(page, base, { grade: 1, flow: 'lively', teams: 6, kind: 'person' });
+      const shown = await page.locator('[data-photo-broken]').waitFor({ timeout: 3000 }).then(() => true, () => false);
+      check('인물 퀴즈: 사진을 못 읽으면 알림과 힌트가 저절로 열림', shown && (await page.locator('.word-hint').isVisible()) && (await page.locator(act('hint')).isDisabled()));
+    } finally {
+      await bctx.close();
+    }
+  },
+
+  // [다음 순서] 두 번 누름 → 한 칸만, 지금 순서 알약 → 묻고 나서 처음부터
+  async nextAndPill(ctx, base, check) {
+    const page = await ctx.newPage();
+    await open(page, base);
+    await click(page, 'grade-3');
+    await click(page, 'start');
+    await page.waitForTimeout(GUARD_WAIT);
+    await page.locator(act('next-step')).dblclick();
+    await page.waitForTimeout(100);
+    check('[다음 순서] 두 번 눌러도 한 칸만', (await page.locator('.pill.on').getAttribute('data-act')) === 'goto-1', await page.locator('.pill.on').getAttribute('data-act'));
+    await click(page, 'goto-1');
+    check('규칙 안내 중 지금 순서 알약 → 묻지 않음(이미 처음)', (await page.locator('[role="dialog"]').count()) === 0);
+    await click(page, 'start-step');
+    await page.waitForTimeout(GUARD_WAIT);
+    await click(page, 'goto-1');
+    const asked = await page.locator(act('restart-confirm')).isVisible();
+    await click(page, 'restart-cancel');
+    const still = (await page.locator('[data-view="activity"]').count()) === 1;
+    check('진행 중 지금 순서 알약 → 묻고, [아니요]면 그대로', asked && still);
+    await click(page, 'goto-1');
+    await click(page, 'restart-confirm');
+    check('[네, 처음부터] → 그 순서의 규칙 안내', await page.locator('[data-view="rules"]').isVisible());
+    await page.close();
+  },
+
+  // ⏸ 중 [맞혔어요] → 2초 뒤 다음 문제(멈춘 채 머물지 않음)
+  async pausedCorrect(ctx, base, check) {
+    const page = await ctx.newPage();
+    await openStep(page, base, { grade: 3, flow: 'lively', teams: 6, kind: 'word' });
+    const p0 = await page.locator('[data-prompt]').innerText();
+    await click(page, 'pause');
+    await click(page, 'correct');
+    await page.waitForTimeout(2600);
+    const next = await page.locator(act('correct')).isVisible();
+    check('⏸ 중 [맞혔어요] → 2초 뒤 다음 문제', next && (await page.locator('[data-prompt]').innerText()) !== p0);
+    check('⏸ 중 다음 문제의 의논 시간은 멈춘 채', (await page.locator('[data-discuss]').getAttribute('data-discuss')) === '10');
+    await page.close();
+  },
+
+  // 이야기: 반 인원 칸을 비워도 앞 값, [힌트] 두 번 눌러도 켜진 채
+  async storyInputs(ctx, base, check) {
+    const page = await ctx.newPage();
+    await openStep(page, base, { grade: 3, flow: 'lively', teams: 6, kind: 'story' });
+    if (await page.locator(act('hint')).count()) {
+      await page.locator(act('hint')).dblclick();
+      await page.waitForTimeout(100);
+      check('이야기: [힌트] 두 번 눌러도 켜진 채', (await page.locator(act('hint')).getAttribute('aria-pressed')) === 'true');
+    }
+    for (let i = 0; i < 3; i++) {
+      await page.waitForTimeout(GUARD_WAIT);
+      await click(page, 'stage-next');
+    }
+    await page.waitForTimeout(GUARD_WAIT);
+    const size = page.locator('[data-field="class-size"]');
+    await size.fill('3');
+    await click(page, 'pick-number');
+    await page.waitForTimeout(GUARD_WAIT);
+    await size.fill('');
+    await click(page, 'pick-number');
+    const n = Number(await page.locator('[data-picked]').getAttribute('data-picked'));
+    check('이야기: 반 인원 칸을 비우면 앞 값(3명) 그대로', n >= 1 && n <= 3 && (await size.inputValue()) === '3', `${n}번, 칸 '${await size.inputValue()}'`);
+    await page.close();
+  },
+
+  // 동작 줄이기 설정: 깜빡임 대신 고정 강조
+  async reducedMotion(browser, base, check) {
+    const rctx = await browser.newContext({ viewport: { width: 1920, height: 1080 }, reducedMotion: 'reduce' });
+    try {
+      const page = await rctx.newPage();
+      await open(page, base);
+      await click(page, 'grade-3');
+      await click(page, 'start');
+      const shadow = await page.locator(act('next-step')).evaluate((el) => {
+        el.classList.add('blink');
+        return getComputedStyle(el).boxShadow;
+      });
+      check('동작 줄이기: 시간이 끝난 [다음 순서]는 움직임 없이 노란 테두리', shadow && shadow !== 'none', shadow);
+    } finally {
+      await rctx.close();
+    }
+  },
+};
+
 // ---------------------------------------------------------------------------
 
 const results = [];
@@ -550,6 +694,14 @@ async function main() {
     // 인물 퀴즈 (Task 14)
     await checkPerson(ctx, base, check);
 
+    // 미뤄 둔 작은 문제를 고친 것(2026-11-16)
+    await FIX_CHECKS.creditLine(browser, base, check);
+    await FIX_CHECKS.brokenPhoto(browser, base, check);
+    await FIX_CHECKS.nextAndPill(ctx, base, check);
+    await FIX_CHECKS.pausedCorrect(ctx, base, check);
+    await FIX_CHECKS.storyInputs(ctx, base, check);
+    await FIX_CHECKS.reducedMotion(browser, base, check);
+
     // [▶ 시작] 두 번 누름이 활동 버튼에 닿지 않음
     {
       const page = await ctx.newPage();
@@ -645,6 +797,15 @@ async function main() {
         const first = await octx.newPage();
         await open(first, base);
         await first.evaluate(() => navigator.serviceWorker.ready.then(() => true));
+        const caches = await first.evaluate(async () => {
+          const keys = await caches.keys();
+          const photo = keys.find((k) => k.startsWith('ttalkkak-bogyul-photos-'));
+          const app = keys.find((k) => k.startsWith('ttalkkak-bogyul-') && k !== photo);
+          const n = async (k) => (k ? (await (await caches.open(k)).keys()).length : 0);
+          return { photo: await n(photo), app: await n(app), appHasPhoto: app ? (await (await caches.open(app)).keys()).some((r) => r.url.includes('/assets/people/')) : true };
+        });
+        const people = JSON.parse(readFileSync(new URL('../data/people.json', import.meta.url), 'utf8')).people.length;
+        check('오프라인 사본: 사진은 따로 담은 캐시에 모두, 화면 파일 캐시에는 사진 없음', caches.photo === people && caches.app > 0 && !caches.appHasPhoto, JSON.stringify(caches));
         await first.close();
         await octx.setOffline(true);
         const page = await octx.newPage();
@@ -685,6 +846,7 @@ async function main() {
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   main().catch((e) => {
     console.error(e);
+    console.error(`\n--- 멈추기 전 브라우저 기록(최근 ${trail.length}줄) ---\n${trail.join('\n') || '(없음)'}`);
     process.exit(1);
   });
 }

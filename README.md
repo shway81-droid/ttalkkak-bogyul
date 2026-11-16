@@ -36,12 +36,15 @@ npm run serve                     # http://localhost:4173
 npm test                          # 단위 검사 + 자료 검증 + 글꼴 글자 검사
 npm run e2e                       # 브라우저 검사(12세트, 작은 화면, 진행 대본, 오프라인)
 npm run import                    # 짬짬이 자료 다시 가져오기(data/*.json, 인물 사진 assets/people/)
-npm run stamp                     # 화면 파일을 바꾼 뒤 sw.js 파일 목록·캐시 이름 새로 찍기
+npm run stamp                     # 화면 파일·사진을 바꾼 뒤 sw.js 파일 목록·캐시 이름 새로 찍기
 npm run single                    # 단일 HTML 파일 만들기(dist/딸깍보결.html)
 npm run photos                    # 인물 사진을 세로 540px 로 줄이기(이미 작은 것은 그대로)
 ```
 
-- 화면 파일(`js/`·`css/`·`data/`·`assets/`·html 등)을 **더하거나 빼거나 바꾼 뒤에는 `npm run stamp`** 로 `sw.js` 의 파일 목록(`ASSETS`)과 캐시 이름을 새로 찍습니다. 그래야 인터넷이 끊겨도 모든 화면이 열리고, 배포 뒤 브라우저가 옛 파일 대신 새 파일을 한꺼번에 받습니다(`npm test` 가 잊으면 알려 줍니다).
+- 화면 파일(`js/`·`css/`·`data/`·`assets/`·html 등)을 **더하거나 빼거나 바꾼 뒤에는 `npm run stamp`** 로 `sw.js` 의 파일 목록(`ASSETS`·`PHOTOS`)과 캐시 이름을 새로 찍습니다. 그래야 인터넷이 끊겨도 모든 화면이 열리고, 배포 뒤 브라우저가 옛 파일 대신 새 파일을 한꺼번에 받습니다(`npm test` 가 잊으면 알려 줍니다).
+- 인물 사진은 화면 파일과 다른 캐시에 담습니다. 화면 파일만 바뀐 배포에서는 이미 열어 본 PC가 사진을 다시 받지 않고, 사진을 몇 장 못 받아도 오프라인 사본은 만들어집니다(빠진 사진은 다음에 열 때 마저 받음).
+- `npm run import` 는 새 자료를 임시 폴더(`.cache/import-stage`)에 만들고 자료 검증을 통과해야 `data/`·`assets/people/` 을 바꿉니다. 도중에 실패하면 지금 자료는 그대로입니다.
+- 주소는 끝에 `/` 를 붙여 즐겨찾기해 주세요(`…/ttalkkak-bogyul/`). 끝에 `/` 가 없는 주소는 서비스 워커 범위 밖이라 인터넷이 끊기면 열리지 않습니다.
 - 자료를 바꾸면 `node scripts/validate-data.mjs` 로 세트마다 후보가 충분한지 확인합니다.
 
 ## 출처와 라이선스

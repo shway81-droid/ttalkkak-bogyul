@@ -18,7 +18,7 @@ const NAMES = [
   'users', 'handshake', 'star',
   // 버튼·안내
   'play', 'pause', 'chevron-right', 'chevron-left', 'arrow-right', 'arrow-left', 'skip-forward',
-  'circle-check', 'lightbulb', 'dices', 'sprout', 'mic-off', 'messages-square', 'backpack', 'printer',
+  'circle-check', 'lightbulb', 'dices', 'sprout', 'mic-off', 'messages-square', 'image-off', 'printer',
   // 위쪽 띠
   'timer', 'maximize', 'x', 'volume-2', 'volume-x', 'undo-2',
   // 정답 창·별 목표·몸으로 말해요 차례 끝
