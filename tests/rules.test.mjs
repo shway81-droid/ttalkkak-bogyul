@@ -27,7 +27,7 @@ test('순위를 떠올리게 하는 말이 없다', () => {
   for (const kind of KINDS) {
     for (const band of BANDS) {
       const r = rulesFor(kind, band);
-      for (const line of [...r.lines, r.prep || '']) {
+      for (const line of r.lines) {
         for (const bad of ['등', '1위', '우승']) assert.ok(!line.includes(bad), `${kind}/${band}: "${line}"`);
       }
     }

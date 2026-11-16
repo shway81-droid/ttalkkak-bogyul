@@ -51,7 +51,7 @@ export function runSession(root, { plan, teamCount, sfx, onExit }) {
 
   // ---- 위쪽 띠 --------------------------------------------------------------
   const pills = plan.steps.map((step, i) =>
-    h('button', { class: 'pill', type: 'button', 'data-act': `goto-${i}`, 'data-step-kind': step.kind, title: `${step.title} ${step.minutes}분`, onClick: () => goTo(i) },
+    h('button', { class: 'pill', type: 'button', 'data-act': `goto-${i}`, 'data-step-kind': step.kind, title: `${step.title} ${step.minutes}분`, onClick: () => onPill(i) },
       h('span', { class: 'pill-no' }, String(i + 1)), ' ', step.title),
   );
   const timerText = h('span');
@@ -194,13 +194,12 @@ export function runSession(root, { plan, teamCount, sfx, onExit }) {
       return;
     }
     liveSend({ kind: 'idle', message: `${step.title} 규칙 안내 중이에요` });
-    const { lines, prep } = rulesFor(step.kind, plan.band);
+    const { lines } = rulesFor(step.kind, plan.band);
     fill(stage,
       h('section', { class: 'rules', 'data-view': 'rules' },
         h('p', { class: 'rules-step' }, `${state.stepIndex + 1}번째 순서 · ${step.minutes}분`),
         h('h2', { class: 'rules-title' }, STEP_ICON[step.kind] ? icon(STEP_ICON[step.kind]) : null, ` ${step.title}`),
         h('ul', { class: 'rules-lines' }, lines.map((l) => h('li', null, withIcons(l)))),
-        prep && h('p', { class: 'rules-prep' }, icon('backpack'), ` ${prep}`),
         h('button', { class: 'btn btn-go btn-huge', type: 'button', 'data-act': 'start-step', onClick: guard(startStep) }, icon('play', { fill: true }), ' 시작'),
         h('p', { class: 'teacher-note' }, '선생님: 위 글을 읽어 주고 [시작]을 눌러 주세요'),
       ),
@@ -251,6 +250,26 @@ export function runSession(root, { plan, teamCount, sfx, onExit }) {
     renderRules();
   }
 
+  // 지금 진행 중인 순서의 알약을 누르면 묻고 나서 처음부터(잘못 눌러 진행이 사라지지 않게)
+  function onPill(i) {
+    if (i !== state.stepIndex) {
+      goTo(i);
+      return;
+    }
+    if (state.phase !== 'active') return; // 이미 규칙 안내(처음)
+    openModal({
+      label: '다시 시작 확인',
+      q: `'${plan.steps[i].title}'을(를) 처음부터 다시 할까요?`,
+      sub: '이 순서의 진행과 남은 시간이 처음으로 돌아가요. 모은 별은 그대로예요.',
+      yes: ['restart-confirm', '네, 처음부터'],
+      no: ['restart-cancel', '아니요, 계속해요'],
+      onYes: () => {
+        closeModal();
+        goTo(i);
+      },
+    });
+  }
+
   function nextStep() {
     if (state.stepIndex >= lastIndex) return;
     goTo(state.stepIndex + 1);
@@ -279,22 +298,33 @@ export function runSession(root, { plan, teamCount, sfx, onExit }) {
     }
   }
 
-  function openExit() {
+  function openModal({ label, q, sub, yes, no, onYes }) {
     if (modal) return;
-    modal = h('div', { class: 'modal', role: 'dialog', 'aria-modal': 'true', 'aria-label': '끝내기 확인' },
+    modal = h('div', { class: 'modal', role: 'dialog', 'aria-modal': 'true', 'aria-label': label },
       h('div', { class: 'modal-box' },
-        h('p', { class: 'modal-q' }, '처음 화면으로 돌아갈까요?'),
-        h('p', { class: 'modal-sub' }, '지금까지 모은 별과 진행 순서는 사라져요.'),
+        h('p', { class: 'modal-q' }, q),
+        h('p', { class: 'modal-sub' }, sub),
         h('div', { class: 'modal-btns' },
-          h('button', { class: 'btn btn-warn', type: 'button', 'data-act': 'exit-confirm', onClick: finish }, '네, 처음으로'),
-          h('button', { class: 'btn', type: 'button', 'data-act': 'exit-cancel', onClick: closeExit }, '아니요, 계속해요'),
+          h('button', { class: 'btn btn-warn', type: 'button', 'data-act': yes[0], onClick: onYes }, yes[1]),
+          h('button', { class: 'btn', type: 'button', 'data-act': no[0], onClick: closeModal }, no[1]),
         ),
       ),
     );
     shell.append(modal);
   }
 
-  function closeExit() {
+  function openExit() {
+    openModal({
+      label: '끝내기 확인',
+      q: '처음 화면으로 돌아갈까요?',
+      sub: '지금까지 모은 별과 진행 순서는 사라져요.',
+      yes: ['exit-confirm', '네, 처음으로'],
+      no: ['exit-cancel', '아니요, 계속해요'],
+      onYes: finish,
+    });
+  }
+
+  function closeModal() {
     modal?.remove();
     modal = null;
   }
@@ -308,7 +338,7 @@ export function runSession(root, { plan, teamCount, sfx, onExit }) {
     } else if (e.key === 'ArrowRight') {
       guardedNext();
     } else if (e.key === 'Escape' && modal) {
-      closeExit();
+      closeModal();
     }
   }
   document.addEventListener('keydown', onKey);
@@ -325,7 +355,10 @@ export function runSession(root, { plan, teamCount, sfx, onExit }) {
     const dt = now - last;
     last = now;
     S.tick(state, dt);
-    if (activity && state.phase === 'active' && !state.paused) activity.tick(dt);
+    if (activity && state.phase === 'active') {
+      if (!state.paused) activity.tick(dt);
+      else activity.pausedTick?.(dt);
+    }
     updateTimer();
   }, TICK_MS);
 

@@ -184,4 +184,11 @@ button:focus-visible {
     animation: none !important;
     transition: none !important;
   }
+
+  /* 움직임 없이도 시간이 끝난 것을 알 수 있게: [다음 순서]·[다음 단계]를 노란 테두리로 고정 강조 */
+  .next-btn.blink,
+  .btn.blink {
+    box-shadow: 0 0 0 0.3rem rgba(255, 183, 3, 0.95);
+    filter: brightness(1.15);
+  }
 }

@@ -116,6 +116,16 @@ test('awardTurn 후 undo → 별과 차례 모두 원래대로', () => {
   assert.equal(s.turn, 1);
 });
 
+test('awardTurn 뒤 [다음 모둠에게]로 넘긴 다음 undo → 별만 빼고 넘긴 차례는 그대로', () => {
+  const s = createSession(PLAN, 6);
+  awardTurn(s); // 0모둠 ★, 차례 1
+  passTurn(s); // 1모둠이 못 맞혀 차례 2
+  assert.equal(s.turn, 2);
+  assert.equal(undo(s), true);
+  assert.deepEqual(s.stars, [0, 0, 0, 0, 0, 0]);
+  assert.equal(s.turn, 2);
+});
+
 test('기록보다 많이 undo 해도 별은 음수가 되지 않는다', () => {
   const s = createSession(PLAN, 4);
   awardTurn(s);

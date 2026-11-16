@@ -487,12 +487,6 @@
   letter-spacing: -0.01em;
 }
 
-.rules-prep {
-  font-size: max(1.3rem, min(5vh, 2.6vw));
-  color: var(--accent-text);
-  font-weight: 800;
-}
-
 .rules .btn-huge {
   font-size: max(1.6rem, min(6vh, 3.2vw));
   margin-top: 1vh;
@@ -1155,13 +1149,42 @@
   border-radius: var(--radius);
 }
 
+/* 출처는 두 줄까지(좁은 화면에서 긴 저작자 이름도 다 보이게). 묻는 동안에도 두 줄 자리를 잡아 두어
+   출처가 나타날 때 사진 크기가 바뀌지 않는다. */
 .person-credit {
+  flex: 0 0 auto;
   max-width: 100%;
+  min-height: 2.5em;
   font-size: 0.8rem;
+  line-height: 1.25;
   color: var(--muted);
-  white-space: nowrap;
+  text-align: center;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
   overflow: hidden;
-  text-overflow: ellipsis;
+}
+
+/* 사진을 읽지 못했을 때: 빈 칸 대신 알림 */
+.person-figure.broken .person-photo {
+  display: none;
+}
+
+.person-broken {
+  flex: 1 1 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: var(--panel);
+  border-radius: var(--radius);
+  color: var(--muted);
+  font-size: max(1.1rem, min(3.6vh, 1.9vw));
+  font-weight: 800;
+  text-align: center;
 }
 
 .person-side {

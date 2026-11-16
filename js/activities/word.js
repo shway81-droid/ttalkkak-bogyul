@@ -26,6 +26,7 @@ export function mount(el, ctx) {
   let discussMs = 0;
   let flashMs = 0;
   let hintShown = false;
+  let photoBroken = false;
   let mode = 'ask'; // ask | flash | revealed
   // 의논 시계는 이 칸만 고친다. 화면 전체를 1초마다 다시 그리면 누르는 사이 버튼이 바뀌어 클릭이 사라진다.
   let discussSpan = null;
@@ -33,12 +34,22 @@ export function mount(el, ctx) {
   function newItem() {
     item = deck.next();
     // alt 는 비운다: 화면 읽기 프로그램이 정답을 읽어 주지 않게(짬짬이와 같음)
-    photo = isPerson ? h('img', { class: 'person-photo', src: item.photo.file, alt: '', draggable: 'false', 'data-photo': '' }) : null;
+    photoBroken = false;
+    photo = isPerson ? h('img', { class: 'person-photo', src: item.photo.file, alt: '', draggable: 'false', 'data-photo': '', onError: onPhotoError }) : null;
     originTurn = ctx.api.currentTurn();
     discussMs = DISCUSS_SEC * 1000;
     hintShown = false;
     mode = 'ask';
     ctx.gate.mark();
+    render();
+  }
+
+  // 사진을 읽지 못하면(미리 담아 두므로 드문 일) 빈 칸 대신 알리고, 힌트를 저절로 열어 맞힐 거리를 준다.
+  // 이 사진의 오류인지 본다(다음 인물로 넘어간 뒤 늦게 온 옛 사진의 오류는 무시).
+  function onPhotoError(e) {
+    if (e.target !== photo) return;
+    photoBroken = true;
+    if (mode === 'ask' && item.hint) hintShown = true;
     render();
   }
 
@@ -141,10 +152,15 @@ export function mount(el, ctx) {
       ? h('div', { class: 'word person' },
         who,
         h('div', { class: 'person-main' },
-          h('figure', { class: 'person-figure' },
+          h('figure', { class: `person-figure${photoBroken ? ' broken' : ''}` },
             photo,
-            // 사진 출처는 정답이 나온 뒤에: 원본 주소·저작자에 이름이 들어 있을 수 있다
-            mode !== 'ask' ? h('figcaption', { class: 'person-credit', 'data-credit': '' }, `사진: ${item.photo.author} · ${item.photo.license}`) : null),
+            photoBroken ? h('p', { class: 'person-broken', 'data-photo-broken': '' }, icon('image-off'), ' 사진을 불러오지 못했어요 · 힌트를 보고 맞혀요') : null,
+            // 사진 출처는 정답이 나온 뒤에: 원본 주소·저작자에 이름이 들어 있을 수 있다.
+            // 묻는 동안에도 빈 칸으로 자리를 잡아 둔다(출처가 나타날 때 사진이 줄어들지 않게).
+            // 라이선스를 앞에 둔다(저작자 이름이 길어 잘려도 라이선스는 보이게).
+            mode !== 'ask'
+              ? h('figcaption', { class: 'person-credit', 'data-credit': '' }, `사진: ${item.photo.license} · ${item.photo.author}`)
+              : h('figcaption', { class: 'person-credit', 'aria-hidden': 'true' })),
           h('div', { class: 'person-side' },
             tag,
             ask,
@@ -194,6 +210,13 @@ export function mount(el, ctx) {
         flashMs -= dt;
         if (flashMs <= 0) newItem();
       }
+    },
+    // 잠깐 멈춤 중에도 '맞혔어요!' 화면(2초)은 넘어간다 — 수업 시간이 아니라 화면이 바뀌는 사이라서.
+    // (멈춘 채 [맞혔어요]를 누르면 다시 시작할 때까지 '잠시 뒤 다음 문제가 나와요'에 머물던 문제)
+    pausedTick(dt) {
+      if (mode !== 'flash') return;
+      flashMs -= dt;
+      if (flashMs <= 0) newItem();
     },
     // 별판에서 되돌리기를 누르면 차례가 바뀔 수 있으니 차례 표시를 다시 그린다.
     onStars() {

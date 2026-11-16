@@ -1,9 +1,16 @@
 // 짬짬이 저장소에서 낱말·이야기·인물·퀴즈 자료를 가져와 data/ 에 저장하고, 인물 사진을 assets/people/ 에 복사한다.
 // 사용자의 로컬 jjam-classroom 폴더는 건드리지 않고, .cache/jjam-classroom 복제본만 읽는다.
 // --no-pull: 이미 받은 복제본을 그대로 쓴다(원본을 새로 받지 않음).
+//
+// 도중에 실패해도 지금 자료가 반쯤 바뀐 채 남지 않게:
+//   1) 원본에서 자료를 모두 읽고 사진 경로·파일을 먼저 확인한다(아직 아무것도 바꾸지 않음).
+//   2) 새 자료(data/*.json)와 줄인 사진을 임시 폴더(.cache/import-stage)에 만들고, 자료 검증(validate-data)을 거친다.
+//   3) 모두 통과하면 그때 data/*.json 과 assets/people/ 을 한꺼번에 바꿔 넣는다.
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync, rmSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync, rmSync, renameSync, copyFileSync } from 'node:fs';
 import { shrinkPhoto } from './shrink-photos.mjs';
+import { validateData, readDataDir } from './validate-data.mjs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { runInNewContext } from 'node:vm';
@@ -113,7 +120,55 @@ function syncCache(pull = true) {
 }
 
 const readJson = (p) => JSON.parse(readFileSync(join(CACHE, p), 'utf8'));
-const writeJson = (name, obj) => writeFileSync(join(ROOT, 'data', name), JSON.stringify(obj, null, 1) + '\n');
+const jsonText = (obj) => JSON.stringify(obj, null, 1) + '\n';
+
+/** 가져올 자료 파일(data/ 아래). sets.json 은 이 저장소에서 쓰는 것이라 가져오지 않는다 */
+export const IMPORTED_JSON = ['words.json', 'people.json', 'stories.json', 'quiz.json'];
+
+/** 사진 경로가 올바르고 원본 파일이 있는지 먼저 본다. 문제 목록(빈 배열이면 통과) */
+export function checkPhotoSources(people, srcDir) {
+  const errs = [];
+  for (const p of people) {
+    const file = p.photo?.file || '';
+    if (!PHOTO_FILE_RE.test(file)) errs.push(`${p.id}: 사진 경로가 이상합니다 (${file})`);
+    else if (!existsSync(join(srcDir, file))) errs.push(`${p.id}: 원본에 사진 파일이 없습니다 (${file})`);
+  }
+  return errs;
+}
+
+/**
+ * 임시 폴더 stage 에 새 자료를 만든다: stage/data/*.json, stage/assets/people/*.webp.
+ * 실패하면 예외를 던진다(지금 자료는 그대로). shrink(src, dst) 는 사진 한 장을 줄여 쓰는 함수.
+ */
+export async function buildStage({ stage, files, people, srcDir, shrink = shrinkPhoto }) {
+  rmSync(stage, { recursive: true, force: true });
+  mkdirSync(join(stage, 'data'), { recursive: true });
+  mkdirSync(join(stage, 'assets', 'people'), { recursive: true });
+  for (const [name, obj] of Object.entries(files)) writeFileSync(join(stage, 'data', name), jsonText(obj));
+  for (const p of people) await shrink(join(srcDir, p.photo.file), join(stage, p.photo.file));
+}
+
+/**
+ * 임시 폴더의 새 자료를 root 에 바꿔 넣는다. 사진 폴더는 통째로 이름을 바꿔 끼우므로
+ * 빠진 인물의 옛 사진이 남지 않는다. 자료 파일은 하나씩 이름을 바꿔 넣는다(같은 디스크라 바로 끝남).
+ */
+export function commitStage(stage, root, names = IMPORTED_JSON) {
+  const photoDir = join(root, 'assets', 'people');
+  const old = `${stage}-old-people`;
+  rmSync(old, { recursive: true, force: true });
+  mkdirSync(join(root, 'assets'), { recursive: true });
+  if (existsSync(photoDir)) renameSync(photoDir, old);
+  try {
+    renameSync(join(stage, 'assets', 'people'), photoDir);
+  } catch (e) {
+    if (existsSync(old)) renameSync(old, photoDir); // 되돌려 놓는다
+    throw e;
+  }
+  mkdirSync(join(root, 'data'), { recursive: true });
+  for (const name of names) renameSync(join(stage, 'data', name), join(root, 'data', name));
+  rmSync(old, { recursive: true, force: true });
+  rmSync(stage, { recursive: true, force: true });
+}
 
 function countBy(items, keyFn) {
   const out = {};
@@ -126,26 +181,18 @@ function countBy(items, keyFn) {
 async function main() {
   const commit = syncCache(!process.argv.includes('--no-pull'));
   const source = { repo: REPO.replace(/\.git$/, ''), commit };
-  mkdirSync(join(ROOT, 'data'), { recursive: true });
 
+  // 1) 원본에서 모두 읽는다(아직 아무것도 바꾸지 않음)
   const wordItems = readJson('word/data/words.json').items;
   const words = filterWords(wordItems);
-  writeJson('words.json', { source, items: words });
-
-  // 인물 퀴즈: 사진은 원본과 같은 경로(assets/people/…)로 복사한다. 빠진 인물의 옛 사진이 남지 않게 폴더를 새로 만든다.
-  // 복사하면서 세로 540px 로 줄인다(scripts/shrink-photos.mjs — TV 에서 차이가 거의 없고 용량은 절반).
+  // 인물 퀴즈: 사진은 원본과 같은 경로(assets/people/…)로 복사하며 세로 540px 로 줄인다
+  // (scripts/shrink-photos.mjs — TV 에서 차이가 거의 없고 용량은 절반).
   const people = withFullAuthors(filterPeople(wordItems));
-  const photoDir = join(ROOT, 'assets', 'people');
-  rmSync(photoDir, { recursive: true, force: true });
-  mkdirSync(photoDir, { recursive: true });
-  for (const p of people) {
-    if (!PHOTO_FILE_RE.test(p.photo?.file || '')) throw new Error(`${p.id}: 사진 경로가 이상합니다 (${p.photo?.file})`);
-    await shrinkPhoto(join(CACHE, 'word', p.photo.file), join(ROOT, p.photo.file));
-  }
-  writeJson('people.json', { source, people });
+  const srcDir = join(CACHE, 'word');
+  const photoErrs = checkPhotoSources(people, srcDir);
+  if (photoErrs.length) throw new Error(`사진 확인 실패 — 지금 자료는 그대로 둡니다:\n${photoErrs.join('\n')}`);
 
   const stories = readJson('story/data/stories.json').stories.filter((s) => s.sensitivity === 'low');
-  writeJson('stories.json', { source, stories });
 
   const quiz = [];
   const gamesDir = join(CACHE, 'quiz', 'games');
@@ -159,13 +206,37 @@ async function main() {
     if (items.length === 0) console.warn(`경고: 퀴즈 주제 ${topic} 에서 문항 0개`);
     quiz.push(...items);
   }
-  writeJson('quiz.json', { source, items: quiz });
+
+  // 2) 임시 폴더에 새 자료를 만들고 검증한다
+  const stage = join(ROOT, '.cache', 'import-stage');
+  await buildStage({
+    stage,
+    srcDir,
+    people,
+    files: {
+      'words.json': { source, items: words },
+      'people.json': { source, people },
+      'stories.json': { source, stories },
+      'quiz.json': { source, items: quiz },
+    },
+  });
+  copyFileSync(join(ROOT, 'data', 'sets.json'), join(stage, 'data', 'sets.json'));
+  const errs = validateData(
+    readDataDir(join(stage, 'data')),
+    (p) => existsSync(join(stage, p)),
+    (p) => createHash('sha256').update(readFileSync(join(stage, p))).digest('hex'),
+  );
+  if (errs.length) throw new Error(`자료 검증 실패 — 지금 자료는 그대로 둡니다(새 자료: ${stage}):\n${errs.join('\n')}`);
+
+  // 3) 한꺼번에 바꿔 넣는다
+  commitStage(stage, ROOT);
 
   console.log(`원본 커밋 ${commit.slice(0, 7)}`);
   console.log('낱말 유형·난이도:', JSON.stringify(countBy(words, (w) => `${w.type}/${w.level}`)));
   console.log('이야기 학년대:', JSON.stringify(countBy(stories, (s) => s.grades || s.grade || '?')));
   console.log('인물 주제/난이도:', JSON.stringify(countBy(people, (p) => `${p.topic}/${p.level}`)));
   console.log('퀴즈 학년대:', JSON.stringify(countBy(quiz, (q) => q.bands)));
+  console.log('화면 파일이 바뀌었으면 npm run stamp 를 돌려 주세요.');
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

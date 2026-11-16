@@ -2,21 +2,18 @@
 // 목록에서 빠진 파일은 인터넷이 끊기면 열리지 않는다.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, readdirSync, statSync, existsSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync, existsSync, mkdtempSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
-import { assetsHash, listAssets } from '../scripts/sw-version.mjs';
+import { assetsHash, listAssets, readList, readConst, stampFor } from '../scripts/sw-version.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 
-function readAssets() {
-  const src = readFileSync(join(ROOT, 'sw.js'), 'utf8');
-  const m = src.match(/const\s+ASSETS\s*=\s*\[([\s\S]*?)\];/);
-  assert.ok(m, 'sw.js 에 const ASSETS = [ ... ]; 가 있어야 합니다');
-  return [...m[1].matchAll(/'([^']+)'|"([^"]+)"/g)].map((x) => x[1] ?? x[2]);
-}
+const swSource = () => readFileSync(join(ROOT, 'sw.js'), 'utf8');
+/** 화면 파일과 인물 사진을 합친 목록(서비스 워커가 담아 두는 모든 파일) */
+const readAssets = () => [...readList(swSource(), 'ASSETS'), ...readList(swSource(), 'PHOTOS')];
 
 function walk(dir) {
   const out = [];
@@ -44,11 +41,33 @@ test('ASSETS 에 겹치는 항목이 없다', () => {
 });
 
 // 배포 뒤 옛 파일과 새 파일이 섞이지 않게: 파일 내용이 바뀌면 캐시 이름이 바뀌어 sw.js 가 새로 설치된다.
-test('CACHE 이름이 ASSETS 파일 내용의 해시와 맞다(파일을 바꿨다면 npm run stamp)', () => {
-  const src = readFileSync(join(ROOT, 'sw.js'), 'utf8');
-  const m = src.match(/const\s+CACHE\s*=\s*'([^']+)'/);
-  assert.ok(m, "sw.js 에 const CACHE = '...'; 가 있어야 합니다");
-  assert.equal(m[1], `ttalkkak-bogyul-${assetsHash(ROOT, readAssets())}`, '파일이 바뀌었습니다 — npm run stamp 로 캐시 이름을 새로 찍어 주세요');
+test('CACHE·PHOTO_CACHE 이름이 각 목록 파일 내용의 해시와 맞다(파일을 바꿨다면 npm run stamp)', () => {
+  const src = swSource();
+  const msg = '파일이 바뀌었습니다 — npm run stamp 로 캐시 이름을 새로 찍어 주세요';
+  assert.equal(readConst(src, 'CACHE'), `ttalkkak-bogyul-${assetsHash(ROOT, readList(src, 'ASSETS'))}`, msg);
+  assert.equal(readConst(src, 'PHOTO_CACHE'), `ttalkkak-bogyul-photos-${assetsHash(ROOT, readList(src, 'PHOTOS'))}`, msg);
+});
+
+// 화면 파일 하나만 바뀐 배포에서 이미 열어 본 PC가 사진까지 다시 받지 않게
+test('인물 사진은 PHOTOS 에만 있고, 화면 파일이 바뀌어도 사진 캐시 이름은 그대로다', () => {
+  const src = swSource();
+  const assets = readList(src, 'ASSETS');
+  const photos = readList(src, 'PHOTOS');
+  assert.equal(assets.filter((a) => a.startsWith('./assets/people/')).length, 0);
+  assert.ok(photos.length > 0 && photos.every((a) => /^\.\/assets\/people\/[\w-]+\.webp$/.test(a)));
+
+  const dir = mkdtempSync(join(tmpdir(), 'sw-split-'));
+  mkdirSync(join(dir, 'assets', 'people'), { recursive: true });
+  writeFileSync(join(dir, 'app.js'), 'one');
+  writeFileSync(join(dir, 'assets', 'people', 'p-1.webp'), 'photo');
+  const all = ['./app.js', './assets/people/p-1.webp'];
+  const a = stampFor(dir, all);
+  writeFileSync(join(dir, 'app.js'), 'two');
+  const b = stampFor(dir, all);
+  assert.notEqual(a.cache, b.cache);
+  assert.equal(a.photoCache, b.photoCache);
+  writeFileSync(join(dir, 'assets', 'people', 'p-1.webp'), 'photo2');
+  assert.notEqual(stampFor(dir, all).photoCache, b.photoCache);
 });
 
 test('assetsHash 는 내용이 바뀌면 달라지고, 줄바꿈(CRLF/LF)에는 흔들리지 않는다', () => {
@@ -61,26 +80,86 @@ test('assetsHash 는 내용이 바뀌면 달라지고, 줄바꿈(CRLF/LF)에는 
   assert.notEqual(assetsHash(dir, ['./a.js']), h1);
 });
 
-test('설치할 때 브라우저 HTTP 캐시를 거치지 않고 ASSETS 전부를 새로 받는다', async () => {
+/** sw.js 를 가짜 브라우저(캐시는 Map)에서 돌린다. failPhoto(url) 가 참이면 그 사진 받기는 실패 */
+function loadSw({ failPhoto = () => false, stored = {} } = {}) {
   const handlers = {};
-  let added = null;
   const swUrl = new URL('https://example.test/ttalkkak-bogyul/sw.js');
+  const store = new Map(Object.entries(stored).map(([k, v]) => [k, new Map(v.map((u) => [u, 'old']))]));
+  const calls = { addAll: [], add: [] };
+  const openCache = (name) => {
+    if (!store.has(name)) store.set(name, new Map());
+    const m = store.get(name);
+    return {
+      addAll: async (reqs) => { calls.addAll.push({ name, reqs }); for (const r of reqs) m.set(r.url, 'new'); },
+      add: async (req) => {
+        calls.add.push({ name, req });
+        if (failPhoto(req.url)) throw new Error('network');
+        m.set(req.url, 'new');
+      },
+      keys: async () => [...m.keys()].map((url) => ({ url })),
+      match: async (key) => m.get(key),
+      put: async (key, v) => { m.set(key, v); },
+    };
+  };
   const sandbox = {
     self: { addEventListener: (type, fn) => { handlers[type] = fn; }, skipWaiting: async () => {}, location: swUrl, clients: { claim: async () => {} } },
-    caches: { open: async () => ({ addAll: async (reqs) => { added = reqs; } }) },
+    caches: {
+      open: async (name) => openCache(name),
+      keys: async () => [...store.keys()],
+      delete: async (name) => store.delete(name),
+    },
     Request,
     URL,
+    fetch: async () => { throw new Error('offline'); },
+    Response: { error: () => 'error' },
   };
-  vm.runInNewContext(readFileSync(join(ROOT, 'sw.js'), 'utf8'), sandbox);
-  let waiting = null;
-  handlers.install({ waitUntil: (p) => { waiting = p; } });
-  await waiting;
-  const assets = readAssets();
-  assert.equal(added.length, assets.length);
-  added.forEach((req, i) => {
-    assert.equal(req.cache, 'reload', `${assets[i]} 는 cache: 'reload' 로 받아야 합니다`);
-    assert.equal(req.url, new URL(assets[i], swUrl).href);
-  });
+  vm.runInNewContext(swSource(), sandbox);
+  const run = async (type, extra = {}) => {
+    let waiting = null;
+    handlers[type]({ waitUntil: (p) => { waiting = p; }, ...extra });
+    await waiting;
+  };
+  return { run, store, calls, swUrl };
+}
+
+test('설치할 때 브라우저 HTTP 캐시를 거치지 않고 화면 파일은 한꺼번에, 사진은 한 장씩 받는다', async () => {
+  const { run, calls, swUrl } = loadSw();
+  await run('install');
+  const src = swSource();
+  const assets = readList(src, 'ASSETS');
+  const photos = readList(src, 'PHOTOS');
+  assert.equal(calls.addAll.length, 1);
+  assert.equal(calls.addAll[0].name, readConst(src, 'CACHE'));
+  assert.deepEqual([...calls.addAll[0].reqs].map((r) => r.url), assets.map((a) => new URL(a, swUrl).href));
+  assert.ok(calls.addAll[0].reqs.every((r) => r.cache === 'reload'));
+  assert.equal(calls.add.length, photos.length);
+  assert.ok(calls.add.every(({ name, req }) => name === readConst(src, 'PHOTO_CACHE') && req.cache === 'reload'));
+});
+
+test('사진 몇 장을 못 받아도 설치는 되고, 다음에 화면을 열면 빠진 사진만 다시 받는다', async () => {
+  let offline = true;
+  const sw = loadSw({ failPhoto: (u) => offline && /person-00[1-3]\.webp$/.test(u) });
+  await sw.run('install');
+  const photoCache = readConst(swSource(), 'PHOTO_CACHE');
+  const photos = readList(swSource(), 'PHOTOS');
+  assert.equal(sw.store.get(photoCache).size, photos.length - 3);
+  offline = false;
+  sw.calls.add.length = 0;
+  await sw.run('fetch', { request: { method: 'GET', mode: 'navigate', url: new URL('./', sw.swUrl).href }, respondWith: () => {} });
+  assert.equal(sw.calls.add.length, 3);
+  assert.equal(sw.store.get(photoCache).size, photos.length);
+});
+
+test('이미 같은 사진 캐시가 있으면(화면 파일만 바뀐 배포) 사진은 다시 받지 않고, 옛 화면 캐시만 지운다', async () => {
+  const src = swSource();
+  const photoCache = readConst(src, 'PHOTO_CACHE');
+  const swUrl = 'https://example.test/ttalkkak-bogyul/';
+  const photos = readList(src, 'PHOTOS').map((a) => new URL(a, swUrl).href);
+  const sw = loadSw({ stored: { [photoCache]: photos, 'ttalkkak-bogyul-oldoldoldold': ['x'], 'ttalkkak-bogyul-photos-oldoldoldold': ['y'], 'other-app': ['z'] } });
+  await sw.run('install');
+  assert.equal(sw.calls.add.length, 0);
+  await sw.run('activate');
+  assert.deepEqual([...sw.store.keys()].sort(), [readConst(src, 'CACHE'), photoCache, 'other-app'].sort());
 });
 
 test('화면에 필요한 파일이 모두 ASSETS 에 있다', () => {
@@ -91,6 +170,8 @@ test('화면에 필요한 파일이 모두 ASSETS 에 있다', () => {
   assert.deepEqual(missing, []);
 });
 
-test('ASSETS 는 npm run stamp 가 실제 파일로 만든 목록과 같다(사진을 다시 가져오면 npm run stamp)', () => {
-  assert.deepEqual(readAssets(), listAssets(ROOT));
+test('ASSETS·PHOTOS 는 npm run stamp 가 실제 파일로 만든 목록과 같다(사진을 다시 가져오면 npm run stamp)', () => {
+  const { assets, photos } = stampFor(ROOT, listAssets(ROOT));
+  assert.deepEqual(readList(swSource(), 'ASSETS'), assets);
+  assert.deepEqual(readList(swSource(), 'PHOTOS'), photos);
 });
