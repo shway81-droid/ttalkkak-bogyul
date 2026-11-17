@@ -16,6 +16,8 @@ const TURN_KINDS = new Set(['word', 'gesture', 'person']);
 const CLASS_ONLY_KINDS = new Set(['celebrate']);
 // 규칙 안내 없이 바로 활동으로 가는 순서(인사는 패널이 곧 안내라 같은 말을 두 번 읽지 않게).
 const NO_RULES_KINDS = new Set(['greet']);
+// 정답 창에 정답이 뜨는 순서 — 규칙 안내의 [시작] 옆에 [실시간 정답 창 열기]를 크게 둔다(축하는 정답이 없다).
+const ANSWER_KINDS = new Set(['word', 'gesture', 'quizboard', 'person', 'story']);
 /** 우리 반 별 목표: 모둠 수 × 6 (6모둠이면 36개 — 40분 동안 보통 넘을 만큼) */
 export const goalFor = (teamCount) => teamCount * 6;
 
@@ -60,7 +62,8 @@ export function runSession(root, { plan, teamCount, sfx, onExit }) {
   const muteBtn = h('button', { class: 'icon-btn', type: 'button', 'data-act': 'mute', onClick: toggleMute });
   const fsBtn = h('button', { class: 'icon-btn', type: 'button', 'data-act': 'fullscreen', title: '전체화면', 'aria-label': '전체화면', onClick: toggleFullscreen }, icon('maximize'));
   const nextBtn = h('button', { class: 'next-btn', type: 'button', 'data-act': 'next-step', onClick: guardedNext }, '다음 순서 ', icon('chevron-right'));
-  const answerBtn = h('button', { class: 'icon-btn', type: 'button', 'data-act': 'answer-window', title: '선생님용 정답 창 열기 (노트북 화면에)', 'aria-label': '선생님용 정답 창 열기', onClick: openAnswerWindow }, icon('eye'));
+  // 수업 중에도 언제든 정답 창을 열 수 있게 — 아이콘만 두면 알아보기 어려워 '정답 창' 글자를 붙인다
+  const answerBtn = h('button', { class: 'icon-btn answer-btn', type: 'button', 'data-act': 'answer-window', title: '선생님용 정답 창 열기 (노트북 화면에 두세요)', 'aria-label': '선생님용 정답 창 열기', onClick: openAnswerWindow }, icon('eye'), h('span', { class: 'answer-btn-text' }, '정답 창'));
   const exitBtn = h('button', { class: 'icon-btn', type: 'button', 'data-act': 'exit', title: '끝내기', 'aria-label': '끝내기', onClick: openExit }, icon('x'));
   const pausedBadge = h('div', { class: 'paused-badge', hidden: true }, icon('pause'), ' 잠깐 멈췄어요');
 
@@ -200,8 +203,15 @@ export function runSession(root, { plan, teamCount, sfx, onExit }) {
         h('p', { class: 'rules-step' }, `${state.stepIndex + 1}번째 순서 · ${step.minutes}분`),
         h('h2', { class: 'rules-title' }, STEP_ICON[step.kind] ? icon(STEP_ICON[step.kind]) : null, ` ${step.title}`),
         h('ul', { class: 'rules-lines' }, lines.map((l) => h('li', null, withIcons(l)))),
-        h('button', { class: 'btn btn-go btn-huge', type: 'button', 'data-act': 'start-step', onClick: guard(startStep) }, icon('play', { fill: true }), ' 시작'),
-        h('p', { class: 'teacher-note' }, '선생님: 위 글을 읽어 주고 [시작]을 눌러 주세요'),
+        h('div', { class: 'rules-actions' },
+          ANSWER_KINDS.has(step.kind)
+            ? h('button', { class: 'btn btn-answer', type: 'button', 'data-act': 'rules-answer-window', title: '노트북 화면에 띄워 두면 정답을 미리 볼 수 있어요', onClick: openAnswerWindow }, icon('eye'), ' 실시간 정답 창 열기')
+            : null,
+          h('button', { class: 'btn btn-go btn-huge', type: 'button', 'data-act': 'start-step', onClick: guard(startStep) }, icon('play', { fill: true }), ' 시작'),
+        ),
+        h('p', { class: 'teacher-note' }, ANSWER_KINDS.has(step.kind)
+          ? '선생님: 위 글을 읽어 주고 [시작]을 눌러 주세요 · 정답 창은 노트북 화면에 띄워 두세요'
+          : '선생님: 위 글을 읽어 주고 [시작]을 눌러 주세요'),
       ),
     );
   }

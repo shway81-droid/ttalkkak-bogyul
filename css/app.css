@@ -142,6 +142,7 @@
   display: flex;
   align-items: center;
   gap: 1rem;
+  flex-wrap: wrap;
 }
 
 .print-box {
@@ -168,8 +169,13 @@
   min-height: 1.2em;
 }
 
-.start-bottom .btn-go {
+.start-bottom .btn-answer {
   margin-left: auto;
+  font-size: 1.25rem;
+  padding: 0.6em 1.4em;
+}
+
+.start-bottom .btn-go {
   font-size: 1.7rem;
   padding: 0.45em 2.2em;
 }
@@ -261,6 +267,15 @@
   font-size: 1rem;
   cursor: pointer;
   flex-shrink: 0;
+}
+
+/* 선생님용 정답 창 단추: 아이콘에 '정답 창' 글자를 붙여 수업 중에도 바로 찾게 */
+.answer-btn {
+  gap: 0.3rem;
+  padding: 0 0.7rem;
+  font-size: 0.85rem;
+  font-weight: 800;
+  white-space: nowrap;
 }
 
 .next-btn {
@@ -487,9 +502,22 @@
   letter-spacing: -0.01em;
 }
 
+.rules-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 1.2rem;
+  margin-top: 1vh;
+}
+
 .rules .btn-huge {
   font-size: max(1.6rem, min(6vh, 3.2vw));
-  margin-top: 1vh;
+}
+
+.rules .btn-answer {
+  font-size: max(1.1rem, min(3.4vh, 1.8vw));
+  padding: 0.6em 1.4em;
 }
 
 .rules .teacher-note {
