@@ -284,6 +284,20 @@ export const LIVE_CHECKS = {
     await page.close();
   },
 
+  // 이야기 나누기도 정답이 없다 → 규칙 안내에 정답 창 단추도, 정답 창 안내 문구도 없음
+  async storyNoAnswerButton(ctx, base, check) {
+    const page = await ctx.newPage();
+    await open(page, base);
+    await click(page, 'grade-3');
+    await click(page, 'start');
+    await page.locator('[data-step-kind="story"]').first().click();
+    const rules = page.locator('[data-view="rules"]');
+    await rules.waitFor();
+    check('이야기 규칙 안내에는 정답 창 단추·안내 문구가 없음(정답이 없는 순서)',
+      (await page.locator(act('rules-answer-window')).count()) === 0 && !(await rules.innerText()).includes('정답 창'));
+    await page.close();
+  },
+
   // 별을 바꾸는 버튼은 두 번 눌러도 한 번만
   async doubleClicks(ctx, base, check) {
     const page = await ctx.newPage();

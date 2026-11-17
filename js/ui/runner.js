@@ -16,8 +16,9 @@ const TURN_KINDS = new Set(['word', 'gesture', 'person']);
 const CLASS_ONLY_KINDS = new Set(['celebrate']);
 // 규칙 안내 없이 바로 활동으로 가는 순서(인사는 패널이 곧 안내라 같은 말을 두 번 읽지 않게).
 const NO_RULES_KINDS = new Set(['greet']);
-// 정답 창에 정답이 뜨는 순서 — 규칙 안내의 [시작] 옆에 [실시간 정답 창 열기]를 크게 둔다(축하는 정답이 없다).
-const ANSWER_KINDS = new Set(['word', 'gesture', 'quizboard', 'person', 'story']);
+// 정답 창에 정답이 뜨는 순서 — 규칙 안내의 [시작] 옆에 [실시간 정답 창 열기]를 크게 둔다.
+// 축하와 이야기 나누기는 정답이 없어 단추·안내 문구를 뺀다(정답 창이 이미 열려 있으면 이야기의 질문·선생님 안내는 그대로 뜬다).
+const ANSWER_KINDS = new Set(['word', 'gesture', 'quizboard', 'person']);
 /** 우리 반 별 목표: 모둠 수 × 6 (6모둠이면 36개 — 40분 동안 보통 넘을 만큼) */
 export const goalFor = (teamCount) => teamCount * 6;
 
