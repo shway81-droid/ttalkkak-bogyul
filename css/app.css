@@ -263,6 +263,15 @@
   flex-shrink: 0;
 }
 
+/* 선생님용 정답 창 단추: 아이콘에 '정답 창' 글자를 붙여 수업 중에도 바로 찾게 */
+.answer-btn {
+  gap: 0.3rem;
+  padding: 0 0.7rem;
+  font-size: 0.85rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
 .next-btn {
   border: 0;
   border-radius: 0.6rem;

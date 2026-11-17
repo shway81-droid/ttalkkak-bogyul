@@ -60,7 +60,8 @@ export function runSession(root, { plan, teamCount, sfx, onExit }) {
   const muteBtn = h('button', { class: 'icon-btn', type: 'button', 'data-act': 'mute', onClick: toggleMute });
   const fsBtn = h('button', { class: 'icon-btn', type: 'button', 'data-act': 'fullscreen', title: '전체화면', 'aria-label': '전체화면', onClick: toggleFullscreen }, icon('maximize'));
   const nextBtn = h('button', { class: 'next-btn', type: 'button', 'data-act': 'next-step', onClick: guardedNext }, '다음 순서 ', icon('chevron-right'));
-  const answerBtn = h('button', { class: 'icon-btn', type: 'button', 'data-act': 'answer-window', title: '선생님용 정답 창 열기 (노트북 화면에)', 'aria-label': '선생님용 정답 창 열기', onClick: openAnswerWindow }, icon('eye'));
+  // 수업 중에도 언제든 정답 창을 열 수 있게 — 아이콘만 두면 알아보기 어려워 '정답 창' 글자를 붙인다
+  const answerBtn = h('button', { class: 'icon-btn answer-btn', type: 'button', 'data-act': 'answer-window', title: '선생님용 정답 창 열기 (노트북 화면에 두세요)', 'aria-label': '선생님용 정답 창 열기', onClick: openAnswerWindow }, icon('eye'), h('span', { class: 'answer-btn-text' }, '정답 창'));
   const exitBtn = h('button', { class: 'icon-btn', type: 'button', 'data-act': 'exit', title: '끝내기', 'aria-label': '끝내기', onClick: openExit }, icon('x'));
   const pausedBadge = h('div', { class: 'paused-badge', hidden: true }, icon('pause'), ' 잠깐 멈췄어요');
 
