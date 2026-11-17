@@ -1,7 +1,9 @@
 // 서비스 워커: 한 번 열면 인터넷이 끊겨도 쓸 수 있게 화면에 필요한 파일을 모두 담아 둔다.
-// 화면 파일(ASSETS)과 인물 사진(PHOTOS)은 캐시를 따로 쓴다.
-// - 화면 파일: 담아 둔 것으로 먼저 답하고 뒤에서 새로 받아 갈아 끼운다(stale-while-revalidate).
-//   설치할 때 한꺼번에 받는다(addAll — 하나라도 실패하면 설치 실패, 옛 파일과 새 파일이 섞이지 않게).
+// 화면 파일(ASSETS)과 인물 사진(PHOTOS)은 캐시를 따로 쓴다. 둘 다 담아 둔 것으로만 답한다(cache-first).
+// - 화면 파일: 내용이 바뀌면 캐시 이름이 바뀌어 sw.js 가 새로 설치되고, 새 캐시에 한꺼번에 받는다
+//   (addAll — 하나라도 실패하면 설치 실패, 옛 파일과 새 파일이 섞이지 않게). 그래서 열 때마다 다시 받지 않는다.
+//   예전에는 열 때마다 뒤에서 다시 받아 같은 칸을 덮어썼는데(stale-while-revalidate), 다른 페이지가 그 칸을
+//   읽는 도중에 덮어쓰면 요청이 끊겨 첫 화면이 빈 채로 남았다(docs/2026-11-13-next-steps.md 6번).
 // - 인물 사진: 내용이 바뀌면 사진 캐시 이름이 바뀌므로 담아 둔 것을 그대로 쓴다(cache-first).
 //   한 장씩 받아 실패한 사진만 빠지고(불안정한 와이파이에서도 설치는 됨), 빠진 사진은 다음에 열 때 다시 받는다.
 //   화면 파일만 바뀐 배포에서는 사진 캐시 이름이 그대로라 사진(약 3MB)을 다시 받지 않는다.
@@ -418,25 +420,11 @@ function cacheKey(request) {
 
 const PHOTO_KEYS = new Set(PHOTOS.map(abs));
 
-async function staleWhileRevalidate(event, key) {
-  const cache = await caches.open(CACHE);
-  const cached = await cache.match(key);
-  const fresh = fetch(event.request)
-    .then((res) => {
-      if (res.ok && res.type === 'basic') return cache.put(key, res.clone()).then(() => res);
-      return res;
-    })
-    .catch(() => null);
-  if (cached) {
-    event.waitUntil(fresh);
-    return cached;
-  }
-  const res = await fresh;
-  return res || Response.error();
-}
-
-async function cacheFirst(event, key) {
-  const cache = await caches.open(PHOTO_CACHE);
+// 담아 둔 것이 있으면 그것으로만 답하고, 없으면 인터넷에서 받아 답하면서 담아 둔다.
+// 담아 둔 칸을 뒤에서 다시 받아 덮어쓰지 않는다: 다른 페이지(정답 창·새로고침)가 그 칸을 읽는 도중에 덮어쓰면
+// 그 요청이 끊겨(net::ERR_ABORTED) 모듈 하나가 빠지고 첫 화면이 빈 채로 남는다.
+async function cacheFirst(event, cacheName, key) {
+  const cache = await caches.open(cacheName);
   const cached = await cache.match(key);
   if (cached) return cached;
   const res = await fetch(event.request).catch(() => null);
@@ -452,10 +440,10 @@ self.addEventListener('fetch', (event) => {
   if (new URL(request.url).origin !== self.location.origin) return;
   const key = cacheKey(request);
   if (PHOTO_KEYS.has(key)) {
-    event.respondWith(cacheFirst(event, key));
+    event.respondWith(cacheFirst(event, PHOTO_CACHE, key));
     return;
   }
   // 화면을 열 때마다 설치 때 받지 못한 사진을 뒤에서 마저 받는다(인터넷이 끊겨 있으면 그냥 실패).
   if (request.mode === 'navigate') event.waitUntil(fillPhotos().catch(() => 0));
-  event.respondWith(staleWhileRevalidate(event, key));
+  event.respondWith(cacheFirst(event, CACHE, key));
 });

@@ -80,12 +80,13 @@ test('assetsHash 는 내용이 바뀌면 달라지고, 줄바꿈(CRLF/LF)에는 
   assert.notEqual(assetsHash(dir, ['./a.js']), h1);
 });
 
-/** sw.js 를 가짜 브라우저(캐시는 Map)에서 돌린다. failPhoto(url) 가 참이면 그 사진 받기는 실패 */
-function loadSw({ failPhoto = () => false, stored = {} } = {}) {
+/** sw.js 를 가짜 브라우저(캐시는 Map)에서 돌린다. failPhoto(url) 가 참이면 그 사진 받기는 실패.
+ *  network(request) 를 주면 fetch 가 그 값을 돌려준다(없으면 인터넷이 끊긴 것처럼 실패). */
+function loadSw({ failPhoto = () => false, stored = {}, network = null } = {}) {
   const handlers = {};
   const swUrl = new URL('https://example.test/ttalkkak-bogyul/sw.js');
   const store = new Map(Object.entries(stored).map(([k, v]) => [k, new Map(v.map((u) => [u, 'old']))]));
-  const calls = { addAll: [], add: [] };
+  const calls = { addAll: [], add: [], put: [], fetch: [] };
   const openCache = (name) => {
     if (!store.has(name)) store.set(name, new Map());
     const m = store.get(name);
@@ -98,7 +99,7 @@ function loadSw({ failPhoto = () => false, stored = {} } = {}) {
       },
       keys: async () => [...m.keys()].map((url) => ({ url })),
       match: async (key) => m.get(key),
-      put: async (key, v) => { m.set(key, v); },
+      put: async (key, v) => { calls.put.push({ name, key }); m.set(key, v); },
     };
   };
   const sandbox = {
@@ -110,7 +111,11 @@ function loadSw({ failPhoto = () => false, stored = {} } = {}) {
     },
     Request,
     URL,
-    fetch: async () => { throw new Error('offline'); },
+    fetch: async (req) => {
+      calls.fetch.push(req.url);
+      if (!network) throw new Error('offline');
+      return network(req);
+    },
     Response: { error: () => 'error' },
   };
   vm.runInNewContext(swSource(), sandbox);
@@ -160,6 +165,34 @@ test('이미 같은 사진 캐시가 있으면(화면 파일만 바뀐 배포) �
   assert.equal(sw.calls.add.length, 0);
   await sw.run('activate');
   assert.deepEqual([...sw.store.keys()].sort(), [readConst(src, 'CACHE'), photoCache, 'other-app'].sort());
+});
+
+// 화면 파일은 캐시 이름(내용 해시)이 판을 가른다. 파일이 바뀌면 sw.js 가 바뀌어 새로 설치되고 새 캐시에 한꺼번에 받는다.
+// 그래서 담아 둔 파일은 그것으로만 답한다. 뒤에서 다시 받아 같은 칸을 덮어쓰면, 다른 페이지가 그 칸을 읽는 도중
+// 요청이 끊겨(net::ERR_ABORTED) 모듈 하나가 빠지고 첫 화면이 빈 채로 남는다(브라우저 검사가 가끔 멈추던 원인).
+test('화면 파일이 캐시에 있으면 캐시로만 답하고, 뒤에서 다시 받아 덮어쓰지 않는다', async () => {
+  const fresh = { ok: true, type: 'basic', clone() { return this; } };
+  const probe = loadSw({ network: () => fresh });
+  const url = new URL('./js/main.js', probe.swUrl).href;
+  const sw = loadSw({ stored: { [readConst(swSource(), 'CACHE')]: [url] }, network: () => fresh });
+  let answer = null;
+  await sw.run('fetch', { request: { method: 'GET', mode: 'cors', url }, respondWith: (p) => { answer = p; } });
+  assert.equal(await answer, 'old');
+  await new Promise((r) => setTimeout(r, 10));
+  assert.deepEqual(sw.calls.fetch, [], '담아 둔 파일을 인터넷에서 다시 받지 않는다');
+  assert.deepEqual(sw.calls.put, [], '담아 둔 칸을 덮어쓰지 않는다');
+});
+
+test('캐시에 없는 파일은 인터넷에서 받아 답하고 담아 둔다', async () => {
+  const fresh = { ok: true, type: 'basic', clone() { return this; } };
+  const sw = loadSw({ network: () => fresh });
+  const url = new URL('./js/main.js', sw.swUrl).href;
+  let answer = null;
+  await sw.run('fetch', { request: { method: 'GET', mode: 'cors', url }, respondWith: (p) => { answer = p; } });
+  assert.equal(await answer, fresh);
+  await new Promise((r) => setTimeout(r, 10));
+  assert.deepEqual(sw.calls.fetch, [url]);
+  assert.deepEqual(sw.calls.put.map((p) => p.key), [url]);
 });
 
 test('화면에 필요한 파일이 모두 ASSETS 에 있다', () => {
