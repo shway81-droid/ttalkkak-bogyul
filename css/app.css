@@ -1061,6 +1061,22 @@
   font-weight: 700;
 }
 
+/* 본문은 책 한 쪽처럼: 묶음은 가운데, 글은 왼쪽 정렬(줄마다 시작이 같아 따라 읽기 쉽게). 왼쪽 보라 띠는 이야기 색.
+   너비를 글자 크기(em)에 묶어 한 줄이 너무 길어지지 않게 하고, 문장 사이를 조금 띄운다.
+   text-wrap: pretty 로 마지막 줄에 낱말 하나만 남는 일을 줄인다. */
+.story-read .story-text {
+  align-self: center;
+  max-width: 30em;
+  text-align: left;
+  gap: 0.45em;
+  padding: 0.05em 0 0.05em 0.8em;
+  border-left: 0.18em solid var(--seg-m);
+}
+
+.story-read .story-text p {
+  text-wrap: pretty;
+}
+
 .story-read .story-hint,
 .story-read .story-ideas {
   font-size: 0.6em;
