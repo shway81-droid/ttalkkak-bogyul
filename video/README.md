@@ -2,6 +2,8 @@
 
 첫 화면의 **[처음이신가요? 1분 소개 영상 보기]** 링크가 여는 영상의 원본입니다. [Remotion](https://www.remotion.dev)으로 만듭니다.
 
+완성본: [`ttalkkak-bogyul-intro.mp4`](ttalkkak-bogyul-intro.mp4) (약 9.6MB)
+
 - 1920×1080 · 30fps · 약 55초 · 배경음악 + 효과음(내레이션 없음), 음량 약 -16 LUFS(유튜브 권장)
 - 배경음악은 `scripts/make-bgm.mjs` 가 **코드로 직접 만든 곡**입니다(밝은 C장조 104 BPM, 패드·마림바·종소리·베이스·가벼운 드럼). 남의 곡을 쓰지 않아 유튜브 저작권(Content ID) 걱정이 없습니다.
 - 장면: 고민 → 제목 → 첫 화면(학년·흐름·모둠 수·시작) → 40분 흐름 → 활동 맛보기(인물 퀴즈·몸으로 말해요·말놀이·이야기) → 우리 반 별 → 실시간 정답 창 → 어느 교실에서든 → 마무리
@@ -13,7 +15,7 @@
 cd video
 npm install
 npm run prep     # 글꼴 복사 · 효과음 받기 · 배경음악 만들기 · 앱 화면 찍기 (public/ 아래, 저장소에는 넣지 않음)
-npm run render   # → out/ttalkkak-bogyul-intro.mp4
+npm run render   # → ttalkkak-bogyul-intro.mp4 (저장소에 넣어 두는 완성본)
 ```
 
 - 미리 보며 고치기: `npm run dev` (Remotion Studio)

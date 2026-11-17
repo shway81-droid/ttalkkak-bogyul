@@ -30,7 +30,7 @@
   "scripts": {
     "prep": "node scripts/prep.mjs",
     "dev": "remotion studio",
-    "render": "remotion render IntroVideo out/ttalkkak-bogyul-intro.mp4 --crf=20",
+    "render": "remotion render IntroVideo ttalkkak-bogyul-intro.mp4 --crf=20",
     "build": "remotion bundle",
     "upgrade": "remotion upgrade",
     "lint": "eslint src && tsc"
