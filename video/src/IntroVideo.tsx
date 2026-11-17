@@ -3,7 +3,8 @@ import { linearTiming, TransitionSeries } from "@remotion/transitions";
 import { fade } from "@remotion/transitions/fade";
 import { slide } from "@remotion/transitions/slide";
 import { useEffect, useState } from "react";
-import { AbsoluteFill, continueRender, delayRender } from "remotion";
+import { Audio } from "@remotion/media";
+import { AbsoluteFill, continueRender, delayRender, interpolate, staticFile } from "remotion";
 import { Activities, ACT_LEN } from "./scenes/Activities";
 import { Answer } from "./scenes/Answer";
 import { Flow } from "./scenes/Flow";
@@ -16,6 +17,7 @@ import { Title } from "./scenes/Title";
 import { C, fontsReady } from "./theme";
 
 const T = 12; // 장면 전환 길이(프레임)
+const BGM_VOLUME = 1; // 효과음이 묻히지 않을 만큼
 
 export const SCENES = [
   { name: "Hook", len: 105, el: <Hook /> },
@@ -51,6 +53,16 @@ export const IntroVideo: React.FC = () => {
           return [seq, <TransitionSeries.Transition key={`${s.name}-t`} presentation={presentation} timing={linearTiming({ durationInFrames: T })} />];
         })}
       </TransitionSeries>
+      {/* 배경음악(scripts/make-bgm.mjs 로 만든 곡): 처음 0.5초 들어오고 마지막 1.5초 사라진다 */}
+      <Audio
+        src={staticFile("bgm.wav")}
+        volume={(f) =>
+          interpolate(f, [0, 15, INTRO_LEN - 45, INTRO_LEN], [0, BGM_VOLUME, BGM_VOLUME, 0], {
+            extrapolateLeft: "clamp",
+            extrapolateRight: "clamp",
+          })
+        }
+      />
     </AbsoluteFill>
   );
 };

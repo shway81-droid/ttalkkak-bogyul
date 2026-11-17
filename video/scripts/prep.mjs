@@ -24,6 +24,9 @@ for (const name of ['whoosh', 'mouse-click', 'ding']) {
   writeFileSync(file, Buffer.from(await res.arrayBuffer()));
 }
 
-// 3) 앱 화면: 저장소 맨 위의 Playwright 로 실제 화면을 찍는다
+// 3) 배경음악: 코드로 직접 만든 곡(저작권 걱정 없음)
+execFileSync(process.execPath, [join(HERE, 'scripts', 'make-bgm.mjs')], { stdio: 'inherit' });
+
+// 4) 앱 화면: 저장소 맨 위의 Playwright 로 실제 화면을 찍는다
 execFileSync(process.execPath, [join(HERE, 'scripts', 'capture.mjs')], { stdio: 'inherit', cwd: join(HERE, '..') });
 console.log('준비 끝: npm run render');
