@@ -6,14 +6,13 @@ import { renderStart } from './ui/start.js';
 import { runSession } from './ui/runner.js';
 import { createSfx } from './ui/sfx.js';
 import { h, fill } from './ui/dom.js';
-import { pageUrl } from './ui/pages.js';
 
 const root = document.getElementById('app');
 const sfx = createSfx();
 let data = null;
 
 function showStart() {
-  renderStart(root, { sets: data.sets, onStart, onPrint });
+  renderStart(root, { sets: data.sets, onStart });
 }
 
 function onStart({ grade, flow, teams }) {
@@ -22,10 +21,6 @@ function onStart({ grade, flow, teams }) {
   const seed = (Date.now() ^ Math.floor(Math.random() * 4294967296)) >>> 0;
   const plan = buildPlan(set, data, makeRng(seed));
   runSession(root, { plan, teamCount: teams, sfx, onExit: showStart });
-}
-
-function onPrint({ grade, flow }) {
-  window.open(pageUrl('print', `grade=${grade}&flow=${flow}`), '_blank', 'noopener');
 }
 
 async function boot() {

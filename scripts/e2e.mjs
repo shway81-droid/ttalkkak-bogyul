@@ -523,6 +523,7 @@ async function main() {
       check('학년 고르기 전 [시작] 꺼짐', await page.locator(act('start')).isDisabled());
       await click(page, 'grade-2');
       check('학년 고르면 [시작] 켜짐', await page.locator(act('start')).isEnabled());
+      check('첫 화면: 진행 대본 인쇄 링크는 없음(소개 영상 링크 자리)', (await page.locator(act('print')).count()) === 0);
       check('출처 표시', (await page.locator('body').innerText()).includes('문항·이야기·인물: 짬짬이'));
       check('사진 출처 페이지 링크', (await page.locator(act('credits')).getAttribute('href')) === 'credits.html');
       await page.close();

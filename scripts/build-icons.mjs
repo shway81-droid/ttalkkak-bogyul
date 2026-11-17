@@ -23,6 +23,8 @@ const NAMES = [
   'timer', 'maximize', 'x', 'volume-2', 'volume-x', 'undo-2',
   // 정답 창·별 목표·몸으로 말해요 차례 끝
   'eye', 'goal', 'trophy', 'square-stop',
+  // 첫 화면 소개 영상
+  'circle-play',
 ];
 
 const version = JSON.parse(readFileSync(join(SRC, 'package.json'), 'utf8')).version;
