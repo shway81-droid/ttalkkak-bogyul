@@ -37,6 +37,8 @@ npm run render   # → ttalkkak-bogyul-intro.mp4 (저장소에 넣어 두는 완
 
 유튜브 주소를 `js/ui/start.js` 의 `INTRO_VIDEO_URL` 에 넣으면 첫 화면에 링크가 나타납니다(비어 있으면 숨김).
 
+- 올린 영상: [딸깍 보결 | 갑자기 보결 들어간 초등 선생님을 위한 40분 모둠 수업 (1분 소개)](https://youtu.be/3jhqEEJiT3A) — 채널 '짬짬이 1분사회', 공개, 2026-11-17
+
 ## 저작권
 
 - 글꼴: Pretendard, SIL Open Font License 1.1

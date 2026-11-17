@@ -524,6 +524,15 @@ async function main() {
       await click(page, 'grade-2');
       check('학년 고르면 [시작] 켜짐', await page.locator(act('start')).isEnabled());
       check('첫 화면: 진행 대본 인쇄 링크는 없음(소개 영상 링크 자리)', (await page.locator(act('print')).count()) === 0);
+      // 소개 영상 링크: 유튜브 주소, 새 탭, [실시간 정답 창 열기] 왼쪽 아래(좌하단)
+      const intro = page.locator(act('intro-video'));
+      const introOk = (await intro.count()) === 1;
+      const introHref = introOk ? await intro.getAttribute('href') : null;
+      check('첫 화면: 소개 영상 링크(유튜브, 새 탭)',
+        introOk && /^https:\/\/(youtu\.be|www\.youtube\.com)\//.test(introHref) && (await intro.getAttribute('target')) === '_blank', String(introHref));
+      const ib = introOk ? await intro.boundingBox() : null;
+      const ab = await page.locator(act('open-answer')).boundingBox();
+      check('첫 화면: 소개 영상 링크는 왼쪽 아래', !!ib && !!ab && ib.x < ab.x && ib.x < 1920 * 0.25 && ib.y > 1080 * 0.6, JSON.stringify({ ib, ab }));
       check('출처 표시', (await page.locator('body').innerText()).includes('문항·이야기·인물: 짬짬이'));
       check('사진 출처 페이지 링크', (await page.locator(act('credits')).getAttribute('href')) === 'credits.html');
       await page.close();

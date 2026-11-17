@@ -9,8 +9,8 @@ const SLOT_COLOR = { greet: 'n', word: 'h', team: 'h', person: 'h', story: 'm', 
 const SLOT_NAME = { greet: '인사', word: '말놀이', team: '모둠 놀이', person: '인물 퀴즈', story: '이야기', celebrate: '축하' };
 // 작은 학교·학급도 쓸 수 있게 3모둠부터(기본 6)
 const TEAM_CHOICES = [3, 4, 5, 6, 7, 8];
-// 1분 소개 영상(유튜브). 영상을 올린 뒤 주소를 채운다. 비어 있으면 링크를 보이지 않는다.
-export const INTRO_VIDEO_URL = '';
+// 1분 소개 영상(유튜브, '짬짬이 1분사회' 채널 공개 영상). 비어 있으면 링크를 보이지 않는다.
+export const INTRO_VIDEO_URL = 'https://youtu.be/3jhqEEJiT3A';
 
 export function renderStart(root, { sets, onStart }) {
   const sel = { grade: null, flow: 'lively', teams: 6 };
