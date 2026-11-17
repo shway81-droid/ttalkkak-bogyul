@@ -274,6 +274,7 @@ export const LIVE_CHECKS = {
     const last = (await page.locator('[data-act^="goto-"]').count()) - 1;
     await click(page, `goto-${last}`);
     const rulesTeams = await page.locator('.team').count();
+    check('축하 규칙 안내에는 정답 창 단추가 없음(정답이 없는 순서)', (await page.locator(act('rules-answer-window')).count()) === 0);
     await click(page, 'start-step');
     await page.locator('[data-kind="celebrate"]').waitFor();
     const actTeams = await page.locator('.team').count();
@@ -605,6 +606,7 @@ async function main() {
       await click(page, 'goto-3');
       const rules = page.locator('[data-view="rules"]');
       check('알약 4번째 → 그 순서의 규칙 안내', (await rules.isVisible()) && (await rules.innerText()).includes(title), title);
+      check('규칙 안내: [시작] 옆에 [실시간 정답 창 열기]가 크게 보임', await page.locator(act('rules-answer-window')).isVisible());
       await click(page, 'start-step');
       await page.waitForTimeout(600);
       await click(page, 'pause');
