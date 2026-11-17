@@ -77,7 +77,7 @@ export function mount(el, ctx) { /* el에 그림 */ return { tick(dtMs) {}, dest
 // ctx = {
 //   step,            // plan.steps[i] (kind·title·minutes·content)
 //   band,            // 'lower' | 'middle' | 'upper'
-//   teamCount,       // 4~8
+//   teamCount,       // 3~8
 //   state,           // session 상태 객체 (읽기 전용으로 쓴다)
 //   api: { awardTurn(), passTurn(), awardTeams(teams), awardAll(), currentTurn() }, // 별·차례 변경 후 별판을 다시 그림
 //   sfx,             // { correct(), timeUp() }
@@ -332,7 +332,7 @@ export function mount(el, ctx) { /* el에 그림 */ return { tick(dtMs) {}, dest
   - `scripts/serve.mjs`: `node:http` 정적 서버, `PORT` 환경변수(기본 4173)
   - `scripts/e2e.mjs`의 export `runSet(page, {grade, flow, teams})` — 첫 화면에서 `grade-<n>`·`flow-<f>`·`teams-<n>`·`start` → 순서마다 `start-step` → 그 활동의 기본 조작 한두 번(Task 7~10이 kind별로 채우는 `ACT_STEPS[kind]` 목록; 처음엔 빈 목록) → `next-step` → 축하 화면까지. 콘솔 오류를 모아 돌려준다.
 - 화면 요구(설계 6절):
-  - 첫 화면: 학년 버튼 6개(고르기 전 [시작] 꺼짐), 흐름 카드 2개(순서 막대 + `FLOWS[flow].blurb`, 기본 lively), 모둠 수 4~8(기본 6), [▶ 시작], "🖨 화면을 못 쓰나요? 선생님용 진행 대본 인쇄" 링크(`print.html?grade=&flow=` 새 탭), 아래 출처 "문항·이야기·그림: 짬짬이". 선택값을 저장하지 않는다.
+  - 첫 화면: 학년 버튼 6개(고르기 전 [시작] 꺼짐), 흐름 카드 2개(순서 막대 + `FLOWS[flow].blurb`, 기본 lively), 모둠 수 3~8(기본 6), [▶ 시작], "🖨 화면을 못 쓰나요? 선생님용 진행 대본 인쇄" 링크(`print.html?grade=&flow=` 새 탭), 아래 출처 "문항·이야기·그림: 짬짬이". 선택값을 저장하지 않는다.
   - 위쪽 띠: 세트 제목, 순서 알약 6개(누르면 `goToStep`), 남은 시간 `m:ss`(넘치면 `+m:ss`와 [다음 순서] 깜빡임, `timeUp()` 한 번), ⏸/▶, 🔊/🔇, ⛶ 전체화면, [다음 순서 ▶], ✕(화면 안 확인 상자 → 첫 화면).
   - 별판: 모둠 칩 `n모둠 ★k`, 차례 모둠 강조, 칩마다 [+]·[−], [↶ 되돌리기]. 순위 표시 없음.
   - 규칙 안내: 순서 제목, `rulesFor` 줄들(32px 이상), `prep`, 큰 [▶ 시작] → `beginStep` 후 활동 `mount`.

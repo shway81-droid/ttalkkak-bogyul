@@ -326,6 +326,7 @@
 .team {
   flex: 1 1 0;
   min-width: 0;
+  max-width: 17rem; /* 모둠이 적어도(3모둠) 칩이 너무 길어져 [+]가 이름에서 멀어지지 않게 */
   display: flex;
   align-items: stretch;
   gap: 0.2rem;

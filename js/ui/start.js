@@ -7,7 +7,8 @@ import { FLOWS } from '../core/flows.js';
 
 const SLOT_COLOR = { greet: 'n', word: 'h', team: 'h', person: 'h', story: 'm', celebrate: 'n' };
 const SLOT_NAME = { greet: '인사', word: '말놀이', team: '모둠 놀이', person: '인물 퀴즈', story: '이야기', celebrate: '축하' };
-const TEAM_CHOICES = [4, 5, 6, 7, 8];
+// 작은 학교·학급도 쓸 수 있게 3모둠부터(기본 6)
+const TEAM_CHOICES = [3, 4, 5, 6, 7, 8];
 
 export function renderStart(root, { sets, onStart, onPrint }) {
   const sel = { grade: null, flow: 'lively', teams: 6 };

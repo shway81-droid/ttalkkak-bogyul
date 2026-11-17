@@ -538,6 +538,29 @@ async function main() {
       await page.close();
     }
 
+    // 3모둠: 첫 화면에서 고를 수 있고, 별판 칩 3개·별 목표 18개, 세트 끝까지 진행
+    {
+      const page = await ctx.newPage();
+      const { errors, given } = await runSet(page, { grade: 3, flow: 'lively', teams: 3 }, base);
+      check('3모둠: 끝까지 진행, 콘솔 오류 0', errors.length === 0, errors.join(' | '));
+      const shown = Number(await page.locator('[data-celebrate-total]').getAttribute('data-celebrate-total'));
+      check(`3모둠: 축하 화면 합계 = 준 별 ${given}`, given > 0 && shown === given, `축하 ${shown}`);
+      check('3모둠: 우리 반 별 목표 18개', (await page.locator('[data-goal]').getAttribute('data-goal')) === '18');
+      await click(page, 'goto-1');
+      check('3모둠: 별판 칩 3개', (await page.locator('.team').count()) === 3);
+      await page.close();
+    }
+    {
+      const page = await ctx.newPage();
+      await openStep(page, base, { grade: 3, flow: 'lively', teams: 3, kind: 'word' });
+      for (let i = 0; i < 3; i++) {
+        await click(page, 'pass');
+        await page.waitForTimeout(GUARD_WAIT);
+      }
+      check('3모둠 말놀이: 세 모둠이 다 넘기면 정답 공개', await page.locator('[data-answer]').isVisible());
+      await page.close();
+    }
+
     // 인사는 규칙 안내 없이 바로 패널(같은 말을 두 번 읽지 않게)
     {
       const page = await ctx.newPage();

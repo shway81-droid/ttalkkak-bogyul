@@ -80,6 +80,16 @@ test('8모둠에 차례 별 9번 → 첫 모둠만 2개, 차례는 2모둠', () 
   assert.equal(totalStars(s), 9);
 });
 
+test('3모둠에 차례 별 4번 → 차례가 1모둠으로 돌아와 첫 모둠만 2개', () => {
+  const s = createSession(PLAN, 3);
+  const given = [];
+  for (let i = 0; i < 4; i++) given.push(awardTurn(s));
+  assert.deepEqual(given, [0, 1, 2, 0]);
+  assert.deepEqual(s.stars, [2, 1, 1]);
+  assert.equal(s.turn, 1);
+  assert.equal(totalStars(s), 4);
+});
+
 test('passTurn: 별 없이 차례만 넘어간다', () => {
   const s = createSession(PLAN, 4);
   passTurn(s);
