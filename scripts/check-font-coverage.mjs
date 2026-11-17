@@ -36,7 +36,9 @@ const FONT = path.join(ROOT, 'assets', 'fonts', 'PretendardVariable.subset.woff2
 
 // 화면에 글자로 나올 수 있는 파일만 (스크립트·문서·설정은 제외)
 const TEXT_EXTS = new Set(['.html', '.js', '.json', '.css']);
-const SKIP_DIRS = new Set(['.git', 'node_modules', 'scripts', 'docs', '_original', 'bgm-preview', 'assets', '.github', 'frontend', 'tests', '.cache', '.superpowers']);
+const SKIP_DIRS = new Set(['.git', 'node_modules', 'scripts', 'docs', '_original', 'bgm-preview', 'assets', '.github', 'frontend', 'tests', '.cache', '.superpowers',
+  // 소개 영상(Remotion) 원본: 앱 글꼴 서브셋이 아니라 전체 Pretendard 로 그린다
+  'video']);
 
 // 확장자는 텍스트지만 브라우저가 받지 않는 파일이 사이트마다 있다.
 // (예: video/ 는 사람이 고치는 원본 videos.json 에서 파생 파일을 만들어 내보낸다

@@ -145,28 +145,26 @@
   flex-wrap: wrap;
 }
 
-.print-box {
+.start-links {
   display: flex;
   flex-direction: column;
   gap: 0.2rem;
 }
 
-.print-link {
-  background: none;
-  border: 0;
+/* 소개 영상: 처음 쓰는 선생님을 위한 조용한 글자 링크(진행 대본 인쇄 링크가 있던 자리) */
+.intro-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15em;
   padding: 0.3rem 0;
-  text-decoration: underline;
-  text-underline-offset: 3px;
   color: var(--muted);
   font-size: 0.95rem;
-  cursor: pointer;
-  text-align: left;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
-.print-hint {
-  color: var(--accent-text);
-  font-size: 0.85rem;
-  min-height: 1.2em;
+.intro-link:hover {
+  color: var(--text);
 }
 
 .start-bottom .btn-answer {
