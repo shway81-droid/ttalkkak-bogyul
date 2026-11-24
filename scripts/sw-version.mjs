@@ -7,7 +7,7 @@
 // tests/sw.test.mjs 가 이름이 맞는지 본다. 파일을 바꿨다면: npm run stamp
 import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync, readdirSync, statSync } from 'node:fs';
-import { join, dirname, relative, sep } from 'node:path';
+import { join, dirname, relative, sep, posix } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const BINARY = /\.(woff2?|png|jpe?g|gif|ico|webp)$/i;
@@ -80,8 +80,50 @@ export function listAssets(root) {
   return [...html.map((n) => `./${n}`), ...ROOT_FILES, ...DIRS.flatMap((d) => walk(root, join(root, d)))];
 }
 
+// ---- 모듈 미리 받기(index.html 의 <link rel="modulepreload">) ----------------------------------
+// 첫 화면은 js/main.js 가 import 로 닿는 모듈을 모두 읽어야 뜬다. 그대로 두면 브라우저는 모듈을 읽어 봐야
+// 다음 import 를 알게 되어 5단 계단(왕복 5번)으로 받는다. 목록을 미리 적어 두면 한 번에 받는다.
+export const PRELOAD_START = '<!-- 모듈 미리 받기: npm run stamp 가 js/main.js 에서 닿는 모듈로 새로 씀 -->';
+export const PRELOAD_END = '<!-- /모듈 미리 받기 -->';
+
+/** entry 에서 정적 import·export … from 으로 닿는 모듈(entry 빼고), 처음 만난 순서 */
+export function moduleGraph(root, entry = 'js/main.js') {
+  const seen = [];
+  const visit = (rel) => {
+    if (seen.includes(rel)) return;
+    seen.push(rel);
+    const src = readFileSync(join(root, rel), 'utf8');
+    const deps = src.matchAll(/^\s*(?:import|export)\s[^'"]*?from\s*['"](\.{1,2}\/[^'"]+)['"]|^\s*import\s*['"](\.{1,2}\/[^'"]+)['"]/gm);
+    for (const m of deps) visit(posix.join(posix.dirname(rel), m[1] ?? m[2]));
+  };
+  visit(entry);
+  return seen.slice(1);
+}
+
+/** index.html 글의 미리 받기 칸을 modules 로 바꾼 글 */
+export function withPreloads(html, modules) {
+  const a = html.indexOf(PRELOAD_START);
+  const b = html.indexOf(PRELOAD_END);
+  if (a < 0 || b < a) throw new Error(`index.html 에 ${PRELOAD_START} … ${PRELOAD_END} 칸이 없습니다`);
+  const indent = html.slice(html.lastIndexOf('\n', a) + 1, a);
+  const links = modules.map((m) => `${indent}<link rel="modulepreload" href="${m}">\n`).join('');
+  return `${html.slice(0, a)}${PRELOAD_START}\n${links}${indent}${html.slice(b)}`;
+}
+
+/** index.html 글에 적힌 modulepreload 주소들 */
+export const readPreloads = (html) => [...html.matchAll(/<link rel="modulepreload" href="([^"]+)">/g)].map((m) => m[1]);
+
 function main() {
   const root = join(dirname(fileURLToPath(import.meta.url)), '..');
+  // index.html 이 바뀌면 캐시 이름도 바뀌므로 미리 받기 목록을 먼저 쓴다
+  const indexFile = join(root, 'index.html');
+  const indexSrc = readFileSync(indexFile, 'utf8');
+  const modules = moduleGraph(root);
+  const indexNext = withPreloads(indexSrc, modules);
+  if (indexNext !== indexSrc) {
+    writeFileSync(indexFile, indexNext);
+    console.log(`index.html 모듈 미리 받기 ${modules.length}개 새로 씀`);
+  }
   const file = join(root, 'sw.js');
   const src = readFileSync(file, 'utf8');
   const { assets, photos, cache, photoCache } = stampFor(root, listAssets(root));

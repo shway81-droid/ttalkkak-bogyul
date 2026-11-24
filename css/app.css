@@ -183,6 +183,20 @@
   font-size: 1.5rem;
 }
 
+/* index.html 의 '여는 중' 안내. 빠른 망에서는 보이기 전에 첫 화면으로 바뀌도록, index.html 의 짧은 스크립트가
+   0.6초 뒤 <html> 에 slow-boot 를 붙일 때에야 보인다. (서서히 나타나는 애니메이션은 크롬이 첫 화면 전까지
+   그리지 않아 결국 빈 화면이었다.) */
+.boot-msg {
+  margin: auto;
+  font-size: 2rem;
+  color: var(--muted);
+  visibility: hidden;
+}
+
+.slow-boot .boot-msg {
+  visibility: visible;
+}
+
 /* ---------- 진행 화면 틀 ---------- */
 .session {
   height: 100vh;

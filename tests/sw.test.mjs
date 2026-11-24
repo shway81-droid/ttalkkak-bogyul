@@ -7,7 +7,7 @@ import { join, relative, sep } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
-import { assetsHash, listAssets, readList, readConst, stampFor } from '../scripts/sw-version.mjs';
+import { assetsHash, listAssets, readList, readConst, stampFor, moduleGraph, withPreloads, readPreloads, PRELOAD_START, PRELOAD_END } from '../scripts/sw-version.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 
@@ -25,6 +25,29 @@ function walk(dir) {
   }
   return out;
 }
+
+// 첫 화면에 필요한 모듈을 계단식(왕복 5번)이 아니라 한 번에 받게: 목록이 모자라면 느려지고, 남으면 헛받는다.
+test('index.html 의 모듈 미리 받기 목록이 js/main.js 에서 닿는 모듈과 같다(모듈을 더하거나 뺐다면 npm run stamp)', () => {
+  const html = readFileSync(join(ROOT, 'index.html'), 'utf8');
+  const graph = moduleGraph(ROOT);
+  assert.ok(graph.includes('js/ui/start.js') && graph.includes('js/core/wordTypes.js'), graph.join(', '));
+  assert.deepEqual(readPreloads(html), graph, 'npm run stamp 로 index.html 의 모듈 미리 받기 목록을 새로 써 주세요');
+  for (const m of graph) assert.ok(existsSync(join(ROOT, m)), `${m} 파일이 없습니다`);
+});
+
+test('moduleGraph 는 여러 줄 import·export … from·부수 효과 import 를 따라가고, 동적 import 는 뺀다', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'sw-graph-'));
+  mkdirSync(join(dir, 'js', 'ui'), { recursive: true });
+  writeFileSync(join(dir, 'js', 'main.js'), "import {\n  a,\n  b,\n} from './ui/a.js';\nimport './side.js';\n// import x from './nope.js';\nconst later = () => import('./lazy.js');\n");
+  writeFileSync(join(dir, 'js', 'ui', 'a.js'), "export * from '../re.js';\nexport const a = 1, b = 2;\n");
+  writeFileSync(join(dir, 'js', 'side.js'), "import { a } from './ui/a.js';\n");
+  writeFileSync(join(dir, 'js', 're.js'), 'export const r = 1;\n');
+  assert.deepEqual(moduleGraph(dir), ['js/ui/a.js', 'js/re.js', 'js/side.js']);
+  const html = `<head>\n  ${PRELOAD_START}\n  <link rel="modulepreload" href="old.js">\n  ${PRELOAD_END}\n</head>`;
+  const next = withPreloads(html, ['js/a.js', 'js/b.js']);
+  assert.deepEqual(readPreloads(next), ['js/a.js', 'js/b.js']);
+  assert.equal(withPreloads(next, ['js/a.js', 'js/b.js']), next);
+});
 
 test('ASSETS 는 모두 ./ 로 시작하고 실제 파일이 있다', () => {
   const assets = readAssets();

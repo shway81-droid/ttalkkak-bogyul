@@ -366,7 +366,7 @@ const PHOTOS = [
   './assets/people/person-394.webp',
 ];
 
-const CACHE = 'ttalkkak-bogyul-94559c3a9ed3';
+const CACHE = 'ttalkkak-bogyul-7cdcbe2667a0';
 const PHOTO_CACHE = 'ttalkkak-bogyul-photos-95525a0fc9aa';
 const PREFIX = 'ttalkkak-bogyul-';
 const KEEP = [CACHE, PHOTO_CACHE];
